@@ -4,12 +4,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoTradeMonitor", "src\CryptoTradeMonitor\CryptoTradeMonitor.csproj", "{806CA9E7-99C5-4AE0-8FAD-7EEB313D6F69}"
+	ProjectSection(ProjectDependencies) = postProject
+		{560BF8DB-2734-4CB0-A82E-D7976B52B38C} = {560BF8DB-2734-4CB0-A82E-D7976B52B38C}
+		{5C77CA9C-F695-407E-82D9-461BF0140D65} = {5C77CA9C-F695-407E-82D9-461BF0140D65}
+		{A6644985-E6C5-4421-8CDA-764C0E7FFA91} = {A6644985-E6C5-4421-8CDA-764C0E7FFA91}
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "src\Domain\Domain.csproj", "{560BF8DB-2734-4CB0-A82E-D7976B52B38C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "src\Domain\Domain.csproj", "{560BF8DB-2734-4CB0-A82E-D7976B52B38C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "src\Infrastructure\Infrastructure.csproj", "{5C77CA9C-F695-407E-82D9-461BF0140D65}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "src\Infrastructure\Infrastructure.csproj", "{5C77CA9C-F695-407E-82D9-461BF0140D65}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{A6644985-E6C5-4421-8CDA-764C0E7FFA91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application", "Application\Application.csproj", "{A6644985-E6C5-4421-8CDA-764C0E7FFA91}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,6 +1,9 @@
-﻿namespace Infrastructure.Data.Interfaces
+﻿using Domain.Entities;
+
+namespace Infrastructure.Data.Interfaces
 {
-    internal interface IExchangeApi
+    public interface IExchangeApi
     {
+        Task<HttpResponseMessage> ExecuteApiRequestAsync(Func<HttpClient, Task<HttpResponseMessage>> request);
     }
 }
