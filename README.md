@@ -1,27 +1,4 @@
 # CryptoTradeMonitor
-
-CryptoTradeMonitor/
-│
-├── src/
-│   ├── CryptoTradeMonitor/
-│   │   ├── Data/
-│   │   │   ├── Models/
-│   │   │   │   ├── Trade.cs
-│   │   │   │   └── TradePair.cs
-│   │   │   ├── TradeStorage.cs
-│   │   │   └── ExchangeApi.cs
-│   │   ├── Services/
-│   │   │   ├── TradeSubscriptionService.cs
-│   │   │   ├── DataCleanupService.cs
-│   │   │   └── ConsoleOutputService.cs
-│   │   ├── Utils/
-│   │   │   └── ConsoleColorUtils.cs
-│   │   ├── Program.cs
-│   │   └── CryptoTradeMonitor.csproj
-│   └── CryptoTradeMonitor.sln
-│
-└── README.md
-
 Create a console application in Visual Studio using .NET Core 6.0+.
 Choose a specific market type (e.g., SPOT) and implement functionality to select multiple trade pairs (e.g., usdt/btc, eth/btc).
 Retrieve a list of trade pairs from a top-10 cryptocurrency exchange (preferably Binance).
