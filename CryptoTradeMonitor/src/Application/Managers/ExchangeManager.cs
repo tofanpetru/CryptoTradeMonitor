@@ -9,9 +9,9 @@ namespace Application.Managers
     {
         private readonly IExchangeRepository _exchangeRepository;
 
-        public ExchangeManager(IExchangeRepository exchangeApiRepository)
+        public ExchangeManager(IExchangeRepository exchangeRepository)
         {
-            _exchangeRepository = exchangeApiRepository;
+            _exchangeRepository = exchangeRepository;
         }
 
         public async Task<List<string>> GetMarketTradePairsAsync(MarketType marketType)
