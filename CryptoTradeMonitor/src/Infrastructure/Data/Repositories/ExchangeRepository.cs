@@ -29,7 +29,7 @@ namespace Infrastructure.Data.Repositories
                 return await client.GetAsync(uri);
             });
 
-            if (!response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode || response.Content is null)
             {
                 throw new Exception($"Failed to retrieve trade pairs: {response.ReasonPhrase}");
             }
