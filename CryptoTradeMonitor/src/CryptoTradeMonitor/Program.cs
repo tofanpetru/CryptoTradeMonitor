@@ -1,6 +1,6 @@
-﻿using CryptoTradeMonitor.IoC;
+﻿using Application.Interfaces;
+using CryptoTradeMonitor.IoC;
 using Domain.Enums;
-using Infrastructure.Data.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 var serviceProvider = new ServiceCollection()
@@ -9,7 +9,7 @@ var serviceProvider = new ServiceCollection()
 
 /*try
 {*/
-var exchangeApi = serviceProvider.GetService<IExchangeApi>();
+var exchangeApi = serviceProvider.GetService<IExchangeManager>();
 
 var test = await exchangeApi.GetMarketTradePairsAsync(MarketType.Spot);
 /*

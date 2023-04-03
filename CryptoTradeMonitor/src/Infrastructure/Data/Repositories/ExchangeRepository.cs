@@ -3,14 +3,14 @@ using Domain.Enums;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
 
-namespace CryptoTradeMonitor.Infrastructure.Data
+namespace Infrastructure.Data.Repositories
 {
-    public class ExchangeApi : IExchangeApi
+    public class ExchangeRepository : IExchangeRepository
     {
         private static readonly Dictionary<MarketType, List<string>> _cachedTradePairs = new();
         private readonly IBinanceApiRequestExecutor _requestExecutor;
 
-        public ExchangeApi(IBinanceApiRequestExecutor requestExecutor)
+        public ExchangeRepository(IBinanceApiRequestExecutor requestExecutor)
         {
             _requestExecutor = requestExecutor;
         }
@@ -58,15 +58,6 @@ namespace CryptoTradeMonitor.Infrastructure.Data
             return tradePairs.ToList();
         }
 
-        public async Task<List<string>> GetFilteredTradePairsAsync(MarketType marketType, IEnumerable<string> tradePairs)
-        {
-            var filteredTradePairs = (await GetMarketTradePairsAsync(marketType))
-                .Intersect(tradePairs)
-                .ToList();
-
-            return filteredTradePairs;
-        }
-
         public async Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
         {
             var tasks = tradePairs.Select(async tradePair =>
@@ -92,7 +83,6 @@ namespace CryptoTradeMonitor.Infrastructure.Data
 
             return trades;
         }
-
         #endregion
 
         #region Private methods
