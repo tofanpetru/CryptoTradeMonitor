@@ -2,9 +2,13 @@
 {
     public class TradePair
     {
-        public string Symbol { get; set; }
-        public string BaseAsset { get; set; }
-        public string QuoteAsset { get; set; }
-        public string MarketType { get; set; }
+        public string BaseAsset { get; }
+        public string QuoteAsset { get; }
+
+        public TradePair(string baseAsset, string quoteAsset)
+        {
+            BaseAsset = baseAsset;
+            QuoteAsset = quoteAsset;
+        }
     }
 }
