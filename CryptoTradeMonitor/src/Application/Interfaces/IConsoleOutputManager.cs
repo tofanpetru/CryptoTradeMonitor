@@ -1,6 +1,7 @@
 ﻿namespace Application.Interfaces
 {
-    internal interface IConsoleOutputManager
+    public interface IConsoleOutputManager
     {
+        Task Run();
     }
 }
