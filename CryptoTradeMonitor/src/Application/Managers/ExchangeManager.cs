@@ -7,21 +7,21 @@ namespace Application.Managers
 {
     public class ExchangeManager : IExchangeManager
     {
-        private readonly IExchangeRepository _exchangeApiRepository;
+        private readonly IExchangeRepository _exchangeRepository;
 
         public ExchangeManager(IExchangeRepository exchangeApiRepository)
         {
-            _exchangeApiRepository = exchangeApiRepository;
+            _exchangeRepository = exchangeApiRepository;
         }
 
         public async Task<List<string>> GetMarketTradePairsAsync(MarketType marketType)
         {
-            return await _exchangeApiRepository.GetMarketTradePairsAsync(marketType);
+            return await _exchangeRepository.GetMarketTradePairsAsync(marketType);
         }
 
         public async Task<List<string>> GetFilteredTradePairsAsync(MarketType marketType, IEnumerable<string> tradePairs)
         {
-            var filteredTradePairs = (await _exchangeApiRepository.GetMarketTradePairsAsync(marketType))
+            var filteredTradePairs = (await _exchangeRepository.GetMarketTradePairsAsync(marketType))
                 .Intersect(tradePairs)
                 .ToList();
 
@@ -30,7 +30,7 @@ namespace Application.Managers
 
         public async Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
         {
-            var trades = await _exchangeApiRepository.GetTradesAsync(tradePairs, tradeHistoryCount);
+            var trades = await _exchangeRepository.GetTradesAsync(tradePairs, tradeHistoryCount);
 
             return trades;
         }
