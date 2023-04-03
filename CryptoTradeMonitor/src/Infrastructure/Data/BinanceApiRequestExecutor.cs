@@ -1,6 +1,8 @@
-﻿namespace Infrastructure.Data
+﻿using Infrastructure.Data.Interfaces;
+
+namespace Infrastructure.Data
 {
-    public class BinanceApiRequestExecutor
+    public class BinanceApiRequestExecutor : IBinanceApiRequestExecutor
     {
         private readonly List<HttpClient> _httpClients;
         private int _currentIndex = 0;

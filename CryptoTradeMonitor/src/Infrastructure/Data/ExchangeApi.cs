@@ -1,20 +1,18 @@
 ﻿using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Data;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
-using System.Collections.Concurrent;
 
 namespace CryptoTradeMonitor.Infrastructure.Data
 {
     public class ExchangeApi : IExchangeApi
     {
         private static readonly Dictionary<MarketType, List<string>> _cachedTradePairs = new();
-        private readonly BinanceApiRequestExecutor _requestExecutor;
+        private readonly IBinanceApiRequestExecutor _requestExecutor;
 
-        public ExchangeApi()
+        public ExchangeApi(IBinanceApiRequestExecutor requestExecutor)
         {
-            _requestExecutor = new BinanceApiRequestExecutor();
+            _requestExecutor = requestExecutor;
         }
 
         #region Public methods
