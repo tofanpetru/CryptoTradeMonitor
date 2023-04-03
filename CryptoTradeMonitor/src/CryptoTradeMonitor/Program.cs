@@ -1,6 +1,5 @@
 ﻿using Application.Interfaces;
 using CryptoTradeMonitor.IoC;
-using Domain.Enums;
 using Microsoft.Extensions.DependencyInjection;
 
 var serviceProvider = new ServiceCollection()
@@ -9,4 +8,4 @@ var serviceProvider = new ServiceCollection()
 
 var app = serviceProvider.GetService<IConsoleOutputManager>();
 
-app.Run();
+await app.Run();
