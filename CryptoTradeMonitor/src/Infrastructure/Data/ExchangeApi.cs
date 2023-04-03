@@ -1,96 +1,115 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
+using Infrastructure.Data;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 
 namespace CryptoTradeMonitor.Infrastructure.Data
 {
     public class ExchangeApi : IExchangeApi
     {
-        private readonly List<HttpClient> _httpClients;
-        private int _currentIndex = 0;
+        private static readonly Dictionary<MarketType, List<string>> _cachedTradePairs = new();
+        private readonly BinanceApiRequestExecutor _requestExecutor;
 
         public ExchangeApi()
         {
-            _httpClients = new List<HttpClient>
-            {
-                new HttpClient { BaseAddress = new Uri("https://api.binance.com") },
-                new HttpClient { BaseAddress = new Uri("https://api1.binance.com") },
-                new HttpClient { BaseAddress = new Uri("https://api2.binance.com") },
-                new HttpClient { BaseAddress = new Uri("https://api3.binance.com") },
-                new HttpClient { BaseAddress = new Uri("https://api4.binance.com") }
-            };
+            _requestExecutor = new BinanceApiRequestExecutor();
         }
 
         #region Public methods
-        public async Task<List<TradePair>> GetTradePairsAsync()
+        public async Task<List<string>> GetMarketTradePairsAsync(MarketType marketType)
         {
-            var response = await ExecuteApiRequestAsync(async client => await client.GetAsync("/api/v3/exchangeInfo"));
-
-            if (response.IsSuccessStatusCode)
+            if (_cachedTradePairs.TryGetValue(marketType, out var cachedTradePairs))
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var exchangeInfo = JsonConvert.DeserializeObject<ExchangeInfo>(responseContent);
-
-                var tradePairs = new List<TradePair>();
-                foreach (var symbol in exchangeInfo.Symbols)
-                {
-                    if (symbol.IsSpotTradingAllowed)
-                    {
-                        tradePairs.Add(new TradePair
-                        {
-                            BaseAsset = symbol.BaseAsset,
-                            QuoteAsset = symbol.QuoteAsset
-                        });
-                    }
-                }
-
-                return tradePairs;
+                return cachedTradePairs;
             }
 
-            return null;
-        }
-
-        public async Task<HttpResponseMessage> ExecuteApiRequestAsync(Func<HttpClient, Task<HttpResponseMessage>> request)
-        {
-            HttpResponseMessage response = null;
-            int retryCount = 0;
-
-            while (retryCount < _httpClients.Count)
+            var response = await _requestExecutor.ExecuteApiRequestAsync(async client =>
             {
-                var availableApiClient = await GetAvailableApiClientAsync();
+                var uri = new Uri("/api/v3/exchangeInfo", UriKind.Relative);
+                return await client.GetAsync(uri);
+            });
 
-                if (availableApiClient != null)
-                {
-                    try
-                    {
-                        response = await request(availableApiClient);
-                        if (response.IsSuccessStatusCode)
-                        {
-                            break;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // Ignore exception and try the next available API
-                    }
-                }
-
-                retryCount++;
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Failed to retrieve trade pairs: {response.ReasonPhrase}");
             }
 
-            return response;
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var exchangeInfo = JsonConvert.DeserializeObject<BinanceExchangeInfo>(responseContent);
+
+            var tradePairs = exchangeInfo.Symbols
+                .Where(s => s.MarketType == marketType)
+                .Select(s => s.Symbol)
+                .ToList();
+
+            _cachedTradePairs[marketType] = tradePairs;
+
+            return tradePairs;
         }
+
+        public List<string> ChooseTradePairs(IEnumerable<string> tradePairs)
+        {
+            if (tradePairs?.Any() != true)
+            {
+                Console.WriteLine("Please enter the desired trade pairs, separated by a comma or space:");
+                tradePairs = Console.ReadLine().Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+
+            return tradePairs.ToList();
+        }
+
+        public async Task<List<string>> GetFilteredTradePairsAsync(MarketType marketType, IEnumerable<string> tradePairs)
+        {
+            var filteredTradePairs = (await GetMarketTradePairsAsync(marketType))
+                .Intersect(tradePairs)
+                .ToList();
+
+            return filteredTradePairs;
+        }
+
+        public async Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
+        {
+            var tasks = tradePairs.Select(async tradePair =>
+            {
+                var response = await _requestExecutor.ExecuteApiRequestAsync(async client =>
+                {
+                    var uri = new Uri($"/api/v3/trades?symbol={tradePair.BaseAsset}{tradePair.QuoteAsset}&limit={tradeHistoryCount}", UriKind.Relative);
+                    return await client.GetAsync(uri);
+                });
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Failed to retrieve trades for {tradePair}: {response.ReasonPhrase}");
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<List<BinanceTrade>>(content);
+
+                return result.Select(trade => MapTrade(tradePair, trade));
+            }).ToList();
+
+            var trades = (await Task.WhenAll(tasks)).SelectMany(x => x).ToList();
+
+            return trades;
+        }
+
         #endregion
 
         #region Private methods
-        private Task<HttpClient> GetAvailableApiClientAsync()
+        private BinanceTrade MapTrade(TradePair tradePair, BinanceTrade trade)
         {
-            if (_currentIndex >= _httpClients.Count)
+            var mappedTrade = new BinanceTrade
             {
-                _currentIndex = 0;
-            }
+                TradePair = tradePair,
+                Price = trade.Price,
+                Quantity = trade.Quantity,
+                IsBuyerMaker = trade.IsBuyerMaker,
+                Direction = trade.Direction
+            };
 
-            return Task.FromResult(_httpClients[_currentIndex++]);
+            return mappedTrade;
         }
         #endregion
     }
