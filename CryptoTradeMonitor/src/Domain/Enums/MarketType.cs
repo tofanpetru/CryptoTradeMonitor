@@ -4,6 +4,7 @@
     {
         Spot,
         Futures,
-        Options
+        Options,
+        None
     }
 }

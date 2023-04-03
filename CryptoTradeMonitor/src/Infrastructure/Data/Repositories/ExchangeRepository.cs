@@ -2,6 +2,7 @@
 using Domain.Enums;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace Infrastructure.Data.Repositories
 {
@@ -16,16 +17,30 @@ namespace Infrastructure.Data.Repositories
         }
 
         #region Public methods
-        public async Task<List<string>> GetMarketTradePairsAsync(MarketType marketType)
+        public async Task<List<string>> GetMarketTradePairsAsync(MarketType marketType = MarketType.None, List<string> symbols = null, List<PermissionType> permissions = null)
         {
-            if (_cachedTradePairs.TryGetValue(marketType, out var cachedTradePairs))
+            var queryString = new StringBuilder();
+
+            if (marketType != MarketType.None)
             {
-                return cachedTradePairs;
+                queryString.Append($"marketType={marketType}&");
             }
+
+            if (symbols?.Any() == true)
+            {
+                queryString.Append($"symbols={string.Join(",", symbols)}&");
+            }
+
+            if (permissions?.Any() == true)
+            {
+                queryString.Append($"permissions={string.Join(",", permissions)}&");
+            }
+
+            var query = queryString.ToString().TrimEnd('&');
+            var uri = new Uri($"/api/v3/exchangeInfo?{query}", UriKind.Relative);
 
             var response = await _requestExecutor.ExecuteApiRequestAsync(async client =>
             {
-                var uri = new Uri("/api/v3/exchangeInfo", UriKind.Relative);
                 return await client.GetAsync(uri);
             });
 
@@ -38,14 +53,15 @@ namespace Infrastructure.Data.Repositories
             var exchangeInfo = JsonConvert.DeserializeObject<BinanceExchangeInfo>(responseContent);
 
             var tradePairs = exchangeInfo.Symbols
-                .Where(s => s.MarketType == marketType)
+                .Where(s => marketType == MarketType.None || s.MarketType == marketType)
+                .Where(s => symbols == null || symbols.Contains(s.Symbol))
+                .Where(s => permissions == null || s.Permissions.Any(p => permissions.Contains(p)))
                 .Select(s => s.Symbol)
                 .ToList();
 
-            _cachedTradePairs[marketType] = tradePairs;
-
             return tradePairs;
         }
+
 
         public List<string> ChooseTradePairs(IEnumerable<string> tradePairs)
         {
