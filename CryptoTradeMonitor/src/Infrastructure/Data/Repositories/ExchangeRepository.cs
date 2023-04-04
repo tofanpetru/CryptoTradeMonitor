@@ -1,7 +1,9 @@
 ﻿using Domain.Entities;
 using Domain.Enums;
+using Infrastructure.Data.Converters;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace Infrastructure.Data.Repositories
@@ -9,6 +11,8 @@ namespace Infrastructure.Data.Repositories
     public class ExchangeRepository : IExchangeRepository
     {
         private readonly IBinanceApiRequestExecutor _requestExecutor;
+        private readonly ConcurrentDictionary<string, List<string>> _cachedPairs = new();
+
 
         public ExchangeRepository(IBinanceApiRequestExecutor requestExecutor)
         {
@@ -22,29 +26,42 @@ namespace Infrastructure.Data.Repositories
 
             if (symbols?.Any() == true)
             {
-                queryString.Append($"symbols={string.Join(",", symbols)}&");
+                if (symbols.Count == 1)
+                {
+                    queryString.Append($"symbol={symbols[0]}&");
+                }
+                else
+                {
+                    queryString.Append($"symbols={string.Join(",", symbols)}&");
+                }
             }
 
-            if (permissions?.Any() == true)
+            if (permissions?.Any() == true && symbols == null)
             {
                 queryString.Append($"permissions={string.Join(",", permissions)}&");
             }
 
-            var query = queryString.ToString().TrimEnd('&');
-            var uri = new Uri($"/api/v3/exchangeInfo?{query}", UriKind.Relative);
+            var cacheKey = queryString.ToString();
+
+            if (_cachedPairs.TryGetValue(cacheKey, out var cachedResult))
+            {
+                return cachedResult;
+            }
 
             var response = await _requestExecutor.ExecuteApiRequestAsync(async client =>
             {
+                var query = cacheKey.TrimEnd('&');
+                var uri = new Uri($"/api/v3/exchangeInfo?{query}", UriKind.Relative);
                 return await client.GetAsync(uri);
             });
 
-            if (!response.IsSuccessStatusCode || response.Content is null)
+            if (!response.IsSuccessStatusCode)
             {
                 throw new Exception($"Failed to retrieve trade pairs: {response.ReasonPhrase}");
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            var exchangeInfo = JsonConvert.DeserializeObject<BinanceExchangeInfo>(responseContent);
+            var exchangeInfo = JsonConvert.DeserializeObject<BinanceExchangeInfo>(responseContent, new PermissionTypeConverter());
 
             var tradePairs = exchangeInfo.Symbols
                 .Where(s => symbols == null || symbols.Contains(s.Symbol))
@@ -52,18 +69,16 @@ namespace Infrastructure.Data.Repositories
                 .Select(s => s.Symbol)
                 .ToList();
 
-            return tradePairs;
-        }
+            _cachedPairs.TryAdd(cacheKey, tradePairs);
 
-        public List<string> ChooseTradePairs(IEnumerable<string> tradePairs)
-        {
-            if (tradePairs?.Any() != true)
+            // Remove the cached result after 1 hour
+            _ = Task.Run(async () =>
             {
-                Console.WriteLine("Please enter the desired trade pairs, separated by a comma or space:");
-                tradePairs = Console.ReadLine().Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            }
+                await Task.Delay(TimeSpan.FromHours(1));
+                _cachedPairs.TryRemove(cacheKey, out _);
+            });
 
-            return tradePairs.ToList();
+            return tradePairs;
         }
 
         public async Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
