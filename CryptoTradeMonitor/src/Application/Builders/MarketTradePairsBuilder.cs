@@ -12,6 +12,7 @@ namespace Application.Builders
         {
             _exchangeRepository = exchangeRepository;
         }
+
         public async Task<List<string>> BuildAsync(Action<MarketTradePairsOptions> optionsAction = null)
         {
             var options = new MarketTradePairsOptions();
