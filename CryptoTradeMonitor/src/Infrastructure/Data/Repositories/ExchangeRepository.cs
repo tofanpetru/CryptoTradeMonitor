@@ -8,7 +8,6 @@ namespace Infrastructure.Data.Repositories
 {
     public class ExchangeRepository : IExchangeRepository
     {
-        private static readonly Dictionary<MarketType, List<string>> _cachedTradePairs = new();
         private readonly IBinanceApiRequestExecutor _requestExecutor;
 
         public ExchangeRepository(IBinanceApiRequestExecutor requestExecutor)
@@ -17,14 +16,9 @@ namespace Infrastructure.Data.Repositories
         }
 
         #region Public methods
-        public async Task<List<string>> GetMarketTradePairsAsync(MarketType marketType = MarketType.None, List<string> symbols = null, List<PermissionType> permissions = null)
+        public async Task<List<string>> GetMarketTradePairsAsync(List<string> symbols = null, List<PermissionType> permissions = null)
         {
             var queryString = new StringBuilder();
-
-            if (marketType != MarketType.None)
-            {
-                queryString.Append($"marketType={marketType}&");
-            }
 
             if (symbols?.Any() == true)
             {
@@ -53,7 +47,6 @@ namespace Infrastructure.Data.Repositories
             var exchangeInfo = JsonConvert.DeserializeObject<BinanceExchangeInfo>(responseContent);
 
             var tradePairs = exchangeInfo.Symbols
-                .Where(s => marketType == MarketType.None || s.MarketType == marketType)
                 .Where(s => symbols == null || symbols.Contains(s.Symbol))
                 .Where(s => permissions == null || s.Permissions.Any(p => permissions.Contains(p)))
                 .Select(s => s.Symbol)
@@ -61,7 +54,6 @@ namespace Infrastructure.Data.Repositories
 
             return tradePairs;
         }
-
 
         public List<string> ChooseTradePairs(IEnumerable<string> tradePairs)
         {
@@ -76,11 +68,13 @@ namespace Infrastructure.Data.Repositories
 
         public async Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
         {
+            int limit = tradeHistoryCount > 1000 ? 1000 : tradeHistoryCount;
+
             var tasks = tradePairs.Select(async tradePair =>
             {
                 var response = await _requestExecutor.ExecuteApiRequestAsync(async client =>
                 {
-                    var uri = new Uri($"/api/v3/trades?symbol={tradePair.BaseAsset}{tradePair.QuoteAsset}&limit={tradeHistoryCount}", UriKind.Relative);
+                    var uri = new Uri($"/api/v3/trades?symbol={tradePair.BaseAsset}{tradePair.QuoteAsset}&limit={limit}", UriKind.Relative);
                     return await client.GetAsync(uri);
                 });
 

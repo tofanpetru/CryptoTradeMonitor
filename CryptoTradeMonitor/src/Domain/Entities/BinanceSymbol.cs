@@ -10,6 +10,6 @@ namespace Domain.Entities
         public string Type { get; set; }
         public bool IsSpotTradingAllowed { get; set; }
         public bool IsTradingAllowed { get; set; }
-        public MarketType MarketType { get; set; }
+        public List<PermissionType> Permissions { get; set; }
     }
 }

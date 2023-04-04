@@ -7,25 +7,22 @@ namespace Application.Managers
 {
     public class ExchangeManager : IExchangeManager
     {
+        private readonly IMarketTradePairsBuilder _marketTradePairsBuilder;
         private readonly IExchangeRepository _exchangeRepository;
 
-        public ExchangeManager(IExchangeRepository exchangeRepository)
+        public ExchangeManager(IExchangeRepository exchangeRepository, IMarketTradePairsBuilder marketTradePairsBuilder)
         {
             _exchangeRepository = exchangeRepository;
+            _marketTradePairsBuilder = marketTradePairsBuilder;
         }
 
-        public async Task<List<string>> GetMarketTradePairsAsync(MarketType marketType)
+        public async Task<List<string>> GetMarketTradePairsAsync(List<string> symbols = null, List<PermissionType> permissions = null)
         {
-            return await _exchangeRepository.GetMarketTradePairsAsync(marketType);
-        }
-
-        public async Task<List<string>> GetFilteredTradePairsAsync(MarketType marketType, IEnumerable<string> tradePairs)
-        {
-            var filteredTradePairs = (await _exchangeRepository.GetMarketTradePairsAsync(marketType))
-                .Intersect(tradePairs)
-                .ToList();
-
-            return filteredTradePairs;
+            return await _marketTradePairsBuilder.BuildAsync(options =>
+            {
+                options.Symbols = symbols;
+                options.Permissions = permissions;
+            });
         }
 
         public async Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
