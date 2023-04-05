@@ -2,7 +2,6 @@
 using Domain.Enums;
 using Infrastructure.Data.Converters;
 using Infrastructure.Data.Interfaces;
-using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Text;
 
@@ -60,8 +59,7 @@ namespace Infrastructure.Data.Repositories
                 throw new Exception($"Failed to retrieve trade pairs: {response.ReasonPhrase}");
             }
 
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var exchangeInfo = JsonConvert.DeserializeObject<BinanceExchangeInfo>(responseContent, new PermissionTypeConverter());
+            var exchangeInfo = await _requestExecutor.GetContentAsync<BinanceExchangeInfo>(response, new PermissionTypeConverter());
 
             var tradePairs = exchangeInfo.Symbols
                 .Where(s => symbols == null || symbols.Contains(s.Symbol))
@@ -98,8 +96,7 @@ namespace Infrastructure.Data.Repositories
                     throw new Exception($"Failed to retrieve trades for {tradePair}: {response.ReasonPhrase}");
                 }
 
-                var content = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<List<BinanceTrade>>(content);
+                var result = await _requestExecutor.GetContentAsync<List<BinanceTrade>>(response);
 
                 return result.Select(trade => MapTrade(tradePair, trade));
             }).ToList();
