@@ -13,8 +13,7 @@ namespace Application.Managers
             _exchangeManager = exchangeManager;
         }
 
-
-        public List<T> DisplayMenu<T>(List<T> items, int itemsPerPage = 5)
+        public List<T> DisplayMenu<T>(List<T> items, int itemsPerPage = 9)
         {
             int currentPage = 0;
             int totalPages = (int)Math.Ceiling(items.Count / (double)itemsPerPage);
@@ -58,6 +57,8 @@ namespace Application.Managers
 
                     Console.WriteLine();
                     Console.WriteLine("Use arrow keys to navigate, Space to select/deselect, and Enter to finish.");
+                    Console.WriteLine("Up/Down arrows move through items. Left/Right arrows change pages.");
+                    Console.WriteLine("Reaching the first/last item on a page will automatically move to the previous/next page.");
                 }
 
                 shouldClearConsole = true;
@@ -137,19 +138,14 @@ namespace Application.Managers
             }
         }
 
-
         private async Task<List<string>> ChooseTradePairsAsync()
         {
-            Console.WriteLine("Please enter the desired trade pairs, separated by a comma or space:");
-            var tradePairs = Console.ReadLine()?.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>();
-
             var availableTradePairs = await _exchangeManager.GetMarketTradePairsAsync(permissions: new List<PermissionType> { PermissionType.SPOT });
-            tradePairs = tradePairs.Intersect(availableTradePairs).ToList();
+            var tradePairs = DisplayMenu(availableTradePairs);
 
             if (tradePairs.Count == 0)
             {
-                Console.WriteLine("No valid trade pairs were selected. Available trade pairs:");
-                Console.WriteLine(string.Join(", ", availableTradePairs));
+                Console.WriteLine("Please select at least one item");
             }
 
             return tradePairs;
