@@ -1,6 +1,6 @@
 ﻿using Infrastructure.Data.Interfaces;
 
-namespace Infrastructure.Data
+namespace Infrastructure.Data.Executors
 {
     public class BinanceApiRequestExecutor : IBinanceApiRequestExecutor
     {
