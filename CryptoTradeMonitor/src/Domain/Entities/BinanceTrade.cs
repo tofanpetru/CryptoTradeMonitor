@@ -9,16 +9,6 @@ namespace Domain.Entities
         public TradeDirection Direction { get; set; }
         public bool IsBuyerMaker { get; set; }
         public TradePair TradePair { get; set; }
-
-        public static Trade ToTrade(BinanceTrade binanceTrade)
-        {
-            return new Trade
-            {
-                Price = binanceTrade.Price,
-                Quantity = binanceTrade.Quantity,
-                Direction = binanceTrade.Direction,
-            };
-        }
     }
 
 }
