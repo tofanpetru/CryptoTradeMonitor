@@ -1,7 +1,5 @@
 ﻿using Application.Interfaces;
 using Domain.Enums;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Application.Managers
 {
@@ -176,12 +174,10 @@ namespace Application.Managers
 
             var tradePairs = await GetTradePairsFromUserAsync();
 
-            Console.WriteLine("Selected: " + tradePairs);
+            Console.WriteLine("Selected: " + string.Join(", ", tradePairs));
 
-            // Subscribe to trades for selected trade pairs
             await _tradesSubscriptionService.SubscribeToTradesAsync(tradePairs, (tradePair, trade) =>
             {
-                // Determine color based on whether it's a buy or sell trade
                 var color = trade.IsBuyer ? ConsoleColor.Green : ConsoleColor.Red;
 
                 Console.ForegroundColor = color;
