@@ -115,8 +115,7 @@ namespace Infrastructure.Data.Repositories
                 TradePair = tradePair,
                 Price = trade.Price,
                 Quantity = trade.Quantity,
-                IsBuyerMaker = trade.IsBuyerMaker,
-                Direction = trade.Direction
+                IsBuyerMaker = trade.IsBuyerMaker
             };
 
             return mappedTrade;

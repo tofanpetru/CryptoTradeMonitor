@@ -4,7 +4,7 @@ namespace Infrastructure.Data.Interfaces
 {
     public interface ITradesRepository
     {
-        Task AddTradeAsync(string tradePair, Trade trade);
-        IEnumerable<Trade> GetTrades(string tradePair);
+        Task AddTradeAsync(string tradePair, BinanceTrade trade);
+        IEnumerable<BinanceTrade> GetTrades(string tradePair);
     }
 }

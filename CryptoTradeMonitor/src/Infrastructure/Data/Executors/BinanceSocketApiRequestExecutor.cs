@@ -26,6 +26,7 @@ namespace Infrastructure.Data.Executors
         {
             _cancellationTokenSource = new CancellationTokenSource();
             _clientWebSocket = new ClientWebSocket();
+            Console.WriteLine(_uri);
             await _clientWebSocket.ConnectAsync(_uri, _cancellationTokenSource.Token);
         }
 

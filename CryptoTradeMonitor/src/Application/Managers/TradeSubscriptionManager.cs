@@ -9,19 +9,19 @@ namespace Application.Managers
     public class TradesSubscriptionService : ITradesSubscriptionManager, IDisposable
     {
         private readonly IBinanceSocketApiRequestExecutor _socketApiExecutor;
-        private readonly ConcurrentDictionary<string, List<Trade>> _tradeDataStore;
+        private readonly ConcurrentDictionary<string, List<BinanceTrade>> _tradeDataStore;
         private readonly Timer _clearOldTradesTimer;
         private readonly List<Task> _subscriptionTasks;
 
         public TradesSubscriptionService(IBinanceSocketApiRequestExecutor socketApiExecutor)
         {
             _socketApiExecutor = socketApiExecutor;
-            _tradeDataStore = new ConcurrentDictionary<string, List<Trade>>();
+            _tradeDataStore = new ConcurrentDictionary<string, List<BinanceTrade>>();
             _subscriptionTasks = new List<Task>();
             _clearOldTradesTimer = new Timer(ClearOldTrades, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
-        public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, Trade> tradeCallback)
+        public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback)
         {
             foreach (var tradePair in tradePairs)
             {
@@ -36,15 +36,16 @@ namespace Application.Managers
             await Task.WhenAll(_subscriptionTasks);
         }
 
-        private async Task SubscribeToTradeAsync(string tradePair, Action<string, Trade> tradeCallback)
+        private async Task SubscribeToTradeAsync(string tradePair,
+                                                 Action<string, BinanceTrade> tradeCallback,
+                                                 string eventType = "trade")
         {
-            var streamName = $"{tradePair}@aggTrade";
 
-            var success = await _socketApiExecutor.SubscribeAsync(streamName, "aggTrade", response =>
+            var success = await _socketApiExecutor.SubscribeAsync(tradePair, eventType, response =>
             {
                 try
                 {
-                    var trade = JsonConvert.DeserializeObject<Trade>(response);
+                    var trade = JsonConvert.DeserializeObject<BinanceTrade>(response);
 
                     if (trade == null)
                     {
@@ -52,7 +53,7 @@ namespace Application.Managers
                         return;
                     }
 
-                    _tradeDataStore.AddOrUpdate(tradePair, new List<Trade>() { trade }, (key, oldValue) =>
+                    _tradeDataStore.AddOrUpdate(tradePair, new List<BinanceTrade>() { trade }, (key, oldValue) =>
                     {
                         oldValue.Add(trade);
                         return oldValue;
@@ -66,13 +67,9 @@ namespace Application.Managers
                 }
             });
 
-            if (success)
+            if (!success)
             {
-                Console.WriteLine($"Successfully subscribed to {streamName}");
-            }
-            else
-            {
-                Console.WriteLine($"Failed to subscribe to {streamName}.");
+                Console.WriteLine($"Failed to subscribe to {tradePair}@{eventType}.");
             }
         }
 
