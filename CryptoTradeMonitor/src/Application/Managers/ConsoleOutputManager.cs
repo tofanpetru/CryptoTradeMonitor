@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Domain.Enums;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Application.Managers
 {
@@ -167,6 +168,12 @@ namespace Application.Managers
 
         public async Task Run()
         {
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                Console.WriteLine("Closing application...");
+                e.Cancel = true; // Prevents the application from closing immediately
+            };
+
             var tradePairs = await GetTradePairsFromUserAsync();
 
             Console.WriteLine("Selected: " + tradePairs);
@@ -182,8 +189,8 @@ namespace Application.Managers
                 Console.ResetColor();
             });
 
-            Console.WriteLine("END");
-            Console.ReadLine();
+            Console.WriteLine("Press any key to close the application...");
+            Console.ReadKey();
         }
     }
 }
