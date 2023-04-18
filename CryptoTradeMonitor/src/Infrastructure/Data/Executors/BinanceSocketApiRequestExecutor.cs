@@ -1,4 +1,5 @@
 ﻿using Infrastructure.Data.Interfaces;
+using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
@@ -7,15 +8,18 @@ namespace Infrastructure.Data.Executors
 {
     public class BinanceSocketApiRequestExecutor : IBinanceSocketApiRequestExecutor, IDisposable
     {
+        private readonly ConcurrentDictionary<string, string> _cachedResponses;
+        private readonly ConcurrentDictionary<string, Action<string>> _eventCallbacks;
+        private Uri _uri;
         private ClientWebSocket _clientWebSocket;
         private CancellationTokenSource _cancellationTokenSource;
-        private Uri _uri;
-        private ConcurrentDictionary<string, string> _cachedResponses;
 
-        public BinanceSocketApiRequestExecutor(Uri uri)
+        private const string BinanceWebSocketUri = "wss://stream.binance.com:9443/ws/";
+
+        public BinanceSocketApiRequestExecutor()
         {
-            _uri = uri;
             _cachedResponses = new ConcurrentDictionary<string, string>();
+            _eventCallbacks = new ConcurrentDictionary<string, Action<string>>();
         }
 
         public async Task ConnectAsync()
@@ -82,26 +86,59 @@ namespace Infrastructure.Data.Executors
             }
         }
 
-        public async Task<bool> SubscribeAsync(string message)
+        public async Task<bool> SubscribeAsync(string symbol, string eventType, Action<string> callback)
         {
-            var retries = 0;
-            var success = false;
+            _uri = new Uri(BinanceWebSocketUri + symbol.ToLowerInvariant() + "@" + eventType.ToLowerInvariant());
+            _eventCallbacks[eventType] = callback;
 
-            while (retries < 5)
+            await ConnectAsync();
+            await SendAsync("{\"method\":\"SUBSCRIBE\",\"params\":[\"" + symbol.ToLowerInvariant() + "@" + eventType.ToLowerInvariant() + "\"],\"id\":1}");
+            await StartReceiveLoop();
+
+            return true;
+        }
+
+        public async Task StartReceiveLoop()
+        {
+            while (!_cancellationTokenSource.IsCancellationRequested)
             {
-                await SendAsync(message);
-
-                var response = await ReceiveAsync();
-                if (!string.IsNullOrEmpty(response))
+                try
                 {
-                    success = true;
-                    break;
+                    var response = await ReceiveAsync();
+
+                    if (!string.IsNullOrEmpty(response))
+                    {
+                        var payload = JObject.Parse(response);
+
+                        // Check if payload is a ping message and respond with a pong
+                        if (payload["e"]?.ToString() == "PING")
+                        {
+                            var pongPayload = new JObject { ["pong"] = payload["ping"] };
+                            var pongMessage = pongPayload.ToString();
+
+                            await SendAsync(pongMessage);
+                        }
+                        else
+                        {
+                            var eventType = payload["e"]?.ToString();
+                            var symbol = payload["s"]?.ToString();
+
+                            if (eventType != null && symbol != null)
+                            {
+                                var eventKey = $"{eventType}@{symbol.ToLowerInvariant()}";
+                                if (_eventCallbacks.TryGetValue(eventKey, out var callback))
+                                {
+                                    callback(payload.ToString());
+                                }
+                            }
+                        }
+                    }
                 }
-
-                retries++;
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error in receive loop: {ex}");
+                }
             }
-
-            return success;
         }
     }
 }
