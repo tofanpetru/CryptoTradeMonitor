@@ -66,7 +66,11 @@ namespace Application.Managers
                 }
             });
 
-            if (!success)
+            if (success)
+            {
+                Console.WriteLine($"Successfully subscribed to {streamName}");
+            }
+            else
             {
                 Console.WriteLine($"Failed to subscribe to {streamName}.");
             }
