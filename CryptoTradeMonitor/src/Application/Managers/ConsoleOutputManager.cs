@@ -7,10 +7,12 @@ namespace Application.Managers
     public class ConsoleOutputManager : IConsoleOutputManager
     {
         private readonly IExchangeManager _exchangeManager;
+        private readonly ITradesSubscriptionManager _tradesSubscriptionService;
 
-        public ConsoleOutputManager(IExchangeManager exchangeManager)
+        public ConsoleOutputManager(IExchangeManager exchangeManager, ITradesSubscriptionManager tradesSubscriptionService)
         {
             _exchangeManager = exchangeManager;
+            _tradesSubscriptionService = tradesSubscriptionService;
         }
 
         public List<T> DisplayMenu<T>(List<T> items, int itemsPerPage = 9)
@@ -167,11 +169,21 @@ namespace Application.Managers
         {
             var tradePairs = await GetTradePairsFromUserAsync();
 
-            Console.WriteLine(tradePairs.Count);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            Console.WriteLine("Selected: " + tradePairs);
+
+            // Subscribe to trades for selected trade pairs
+            await _tradesSubscriptionService.SubscribeToTradesAsync(tradePairs, (tradePair, trade) =>
             {
-                Console.ReadLine();
-            }
+                // Determine color based on whether it's a buy or sell trade
+                var color = trade.IsBuyer ? ConsoleColor.Green : ConsoleColor.Red;
+
+                Console.ForegroundColor = color;
+                Console.WriteLine($"{tradePair} - {trade.TradeTime}: {trade.Price} {trade.Quantity}");
+                Console.ResetColor();
+            });
+
+            Console.WriteLine("END");
+            Console.ReadLine();
         }
     }
 }
