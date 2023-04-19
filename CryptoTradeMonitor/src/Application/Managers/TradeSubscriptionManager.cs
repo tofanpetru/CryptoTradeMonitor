@@ -21,24 +21,23 @@ namespace Application.Managers
             _clearOldTradesTimer = new Timer(ClearOldTrades, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
-        public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback)
+        public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback, CancellationToken cancellationToken, string eventType = "trade")
         {
+            var tasks = new List<Task>();
+
             foreach (var tradePair in tradePairs)
             {
-                var subscriptionTask = Task.Run(async () =>
-                {
-                    await SubscribeToTradeAsync(tradePair, tradeCallback);
-                });
-
-                _subscriptionTasks.Add(subscriptionTask);
+                var subscriptionTask = SubscribeToTradeAsync(tradePair, tradeCallback, cancellationToken, eventType);
+                tasks.Add(subscriptionTask);
             }
 
-            await Task.WhenAll(_subscriptionTasks);
+            await Task.WhenAll(tasks);
         }
 
         private async Task SubscribeToTradeAsync(string tradePair,
                                                  Action<string, BinanceTrade> tradeCallback,
-                                                 string eventType = "trade")
+                                                 CancellationToken cancellationToken,
+                                                 string eventType)
         {
 
             var success = await _socketApiExecutor.SubscribeAsync(tradePair, eventType, response =>
@@ -71,6 +70,8 @@ namespace Application.Managers
             {
                 Console.WriteLine($"Failed to subscribe to {tradePair}@{eventType}.");
             }
+
+            await _socketApiExecutor.StartReceiveLoop(cancellationToken);
         }
 
         private void ClearOldTrades(object state)

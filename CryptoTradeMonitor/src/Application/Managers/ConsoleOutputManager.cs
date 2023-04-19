@@ -172,6 +172,7 @@ namespace Application.Managers
                 e.Cancel = true; // Prevents the application from closing immediately
             };
 
+            var cts = new CancellationTokenSource();
             var tradePairs = await GetTradePairsFromUserAsync();
 
             Console.WriteLine("Selected: " + string.Join(", ", tradePairs));
@@ -183,7 +184,9 @@ namespace Application.Managers
                 Console.ForegroundColor = color;
                 Console.WriteLine($"{tradePair} - {trade.TradeTime}: {trade.Price} {trade.Quantity}");
                 Console.ResetColor();
-            });
+            }, cts.Token);
+
+            await Task.Delay(TimeSpan.FromMinutes(5), cts.Token); // Wait for 5 minutes before closing the application
 
             Console.WriteLine("Press any key to close the application...");
             Console.ReadKey();

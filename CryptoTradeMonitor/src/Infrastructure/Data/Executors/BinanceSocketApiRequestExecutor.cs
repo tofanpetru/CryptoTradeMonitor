@@ -1,6 +1,7 @@
 ﻿using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -94,14 +95,15 @@ namespace Infrastructure.Data.Executors
 
             await ConnectAsync();
             await SendAsync("{\"method\":\"SUBSCRIBE\",\"params\":[\"" + symbol.ToLowerInvariant() + "@" + eventType.ToLowerInvariant() + "\"],\"id\":1}");
-            await StartReceiveLoop();
 
             return true;
         }
 
-        public async Task StartReceiveLoop()
+        public async Task StartReceiveLoop(CancellationToken cancellationToken)
         {
-            while (!_cancellationTokenSource.IsCancellationRequested)
+            Console.WriteLine("start");
+
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -146,6 +148,8 @@ namespace Infrastructure.Data.Executors
                     Console.WriteLine($"Error in receive loop: {ex}");
                 }
             }
+            Console.WriteLine("stop");
+
         }
     }
 }
