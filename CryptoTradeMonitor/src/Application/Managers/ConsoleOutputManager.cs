@@ -75,7 +75,7 @@ namespace Application.Managers
                         Console.ForegroundColor = color;
                         Console.WriteLine($"{tradePair} - {trade.TradeTime}: {trade.Price} {trade.Quantity}");
                         Console.ResetColor();
-                    }, "trade", cancellationTokenSource.Token);
+                    }, AppSettings.Configuration.EventType, cancellationTokenSource.Token);
                 });
 
                 loopThread.Start();

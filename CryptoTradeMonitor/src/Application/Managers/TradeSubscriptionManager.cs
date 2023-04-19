@@ -16,7 +16,10 @@ namespace Application.Managers
         {
             _socketApiExecutor = socketApiExecutor;
             _tradeDataStore = new ConcurrentDictionary<string, List<BinanceTrade>>();
-            _clearOldTradesTimer = new Timer(ClearOldTrades, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            _clearOldTradesTimer = new Timer(ClearOldTrades,
+                                             null,
+                                             TimeSpan.Zero,
+                                             TimeSpan.FromSeconds(AppSettings.Configuration.ClearOldTradesIntervalSeconds));
         }
 
         public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback, string eventType, CancellationToken cancellationToken)
@@ -75,9 +78,9 @@ namespace Application.Managers
             {
                 var tradeList = _tradeDataStore[tradePair];
 
-                if (tradeList.Count > 10000)
+                if (tradeList.Count > AppSettings.Configuration.MaxTradeCount)
                 {
-                    tradeList.RemoveRange(0, tradeList.Count - 10000);
+                    tradeList.RemoveRange(0, tradeList.Count - AppSettings.Configuration.MaxTradeCount);
                 }
             }
         }
