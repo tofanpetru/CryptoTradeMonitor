@@ -1,4 +1,5 @@
-﻿using Infrastructure.Data.Interfaces;
+﻿using Domain.Configurations;
+using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 
@@ -14,14 +15,15 @@ namespace Infrastructure.Data.Executors
         public BinanceApiRequestExecutor(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
-            _httpClients = new List<HttpClient>
+
+            var httpClientsConfig = AppSettings<BinanceConfiguration>.Instance.HttpClients;
+            _httpClients = new List<HttpClient>();
+
+            foreach (var client in httpClientsConfig)
             {
-                new HttpClient { BaseAddress = new Uri("https://api.binance.com") },
-                new HttpClient { BaseAddress = new Uri("https://api1.binance.com") },
-                new HttpClient { BaseAddress = new Uri("https://api2.binance.com") },
-                new HttpClient { BaseAddress = new Uri("https://api3.binance.com") },
-                new HttpClient { BaseAddress = new Uri("https://api4.binance.com") }
-            };
+                var httpClient = new HttpClient { BaseAddress = new Uri(client.BaseAddress) };
+                _httpClients.Add(httpClient);
+            }
         }
 
         public async Task<HttpResponseMessage> ExecuteApiRequestAsync(Func<HttpClient, Task<HttpResponseMessage>> func)

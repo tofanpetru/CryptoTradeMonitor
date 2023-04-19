@@ -1,4 +1,5 @@
 ﻿using Domain.Configurations;
+using Infrastructure.Data;
 
 namespace Application.Utils
 {

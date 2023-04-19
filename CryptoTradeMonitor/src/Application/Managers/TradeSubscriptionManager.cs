@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Domain.Configurations;
 using Domain.Entities;
+using Infrastructure.Data;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;

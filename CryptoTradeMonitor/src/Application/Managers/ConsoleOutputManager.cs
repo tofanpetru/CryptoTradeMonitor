@@ -2,6 +2,7 @@
 using Application.Utils;
 using Domain.Configurations;
 using Domain.Enums;
+using Infrastructure.Data;
 
 namespace Application.Managers
 {

@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Domain.Configurations;
+using Domain.Entities;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,8 +16,6 @@ namespace Infrastructure.Data.Executors
         private Uri _uri;
         private ClientWebSocket _clientWebSocket;
         private CancellationTokenSource _cancellationTokenSource;
-
-        private const string BinanceWebSocketUri = "wss://stream.binance.com:9443/ws/";
 
         public BinanceSocketApiRequestExecutor()
         {
@@ -91,7 +90,7 @@ namespace Infrastructure.Data.Executors
 
         public async Task<bool> SubscribeAsync(string symbol, string eventType, Action<string> callback)
         {
-            _uri = new Uri(BinanceWebSocketUri + symbol.ToLowerInvariant() + "@" + eventType.ToLowerInvariant());
+            _uri = new Uri(AppSettings<BinanceConfiguration>.Instance.WebSocketUri + symbol.ToLowerInvariant() + "@" + eventType.ToLowerInvariant());
             _eventCallbacks[eventType] = callback;
 
             Console.WriteLine($"Registered callback for {symbol}@{eventType}");
@@ -114,15 +113,7 @@ namespace Infrastructure.Data.Executors
                         return;
                     }
                     var response = await ReceiveAsync();
-
-
-                    Console.WriteLine();
-                    var output = JsonConvert.DeserializeObject<BinanceTrade>(response);
-                    var color = output.IsBuyerMaker ? ConsoleColor.Green : ConsoleColor.Red;
-                    Console.ForegroundColor = color;
-                    Console.WriteLine($"{output.TradePair} - {output.TradeTime}: {output.Price} {output.Quantity}");
-
-                    Console.ResetColor();
+                    PrintResponse(response);
 
                     if (!string.IsNullOrEmpty(response))
                     {
@@ -157,6 +148,17 @@ namespace Infrastructure.Data.Executors
                     Console.WriteLine($"Error in receive loop: {ex}");
                 }
             }
+        }
+
+        private static void PrintResponse(string response)
+        {
+            Console.WriteLine();
+            var output = JsonConvert.DeserializeObject<BinanceTrade>(response);
+            var color = output.IsBuyerMaker ? ConsoleColor.Green : ConsoleColor.Red;
+            Console.ForegroundColor = color;
+            Console.WriteLine($"{output.TradePair} - {output.TradeTime}: {output.Price} {output.Quantity}");
+
+            Console.ResetColor();
         }
     }
 }
