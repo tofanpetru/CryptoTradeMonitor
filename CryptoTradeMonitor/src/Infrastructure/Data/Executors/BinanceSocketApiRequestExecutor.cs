@@ -113,7 +113,9 @@ namespace Infrastructure.Data.Executors
                         return;
                     }
                     var response = await ReceiveAsync();
-                    PrintResponse(response);
+                    var logger = new ConsoleLogger();
+
+                    PrintResponse(response, logger);
 
                     if (!string.IsNullOrEmpty(response))
                     {
@@ -150,15 +152,14 @@ namespace Infrastructure.Data.Executors
             }
         }
 
-        private static void PrintResponse(string response)
+        private static void PrintResponse(string response, ConsoleLogger logger)
         {
-            Console.WriteLine();
             var output = JsonConvert.DeserializeObject<BinanceTrade>(response);
-            var color = output.IsBuyerMaker ? ConsoleColor.Green : ConsoleColor.Red;
-            Console.ForegroundColor = color;
-            Console.WriteLine($"{output.TradePair} - {output.TradeTime}: {output.Price} {output.Quantity}");
-
-            Console.ResetColor();
+            if (output != null)
+            {
+                var color = output.IsBuyerMaker ? ConsoleColor.Green : ConsoleColor.Red;
+                logger.Log($"{output.TradePair} - {output.TradeTime}: {output.Price} {output.Quantity}", color);
+            }
         }
     }
 }
