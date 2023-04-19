@@ -9,15 +9,15 @@ namespace Application.Managers
     public class ConsoleOutputManager : IConsoleOutputManager
     {
         private readonly IExchangeManager _exchangeManager;
-        private readonly ITradesSubscriptionManager _tradesSubscriptionService;
+        private readonly ITradesSubscriptionManager _TradesSubscriptionManager;
         private readonly ConcurrentQueue<(string TradePair, BinanceTrade Trade)> _tradeQueue;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly Task _monitorTradesTask;
 
-        public ConsoleOutputManager(IExchangeManager exchangeManager, ITradesSubscriptionManager tradesSubscriptionService)
+        public ConsoleOutputManager(IExchangeManager exchangeManager, ITradesSubscriptionManager TradesSubscriptionManager)
         {
             _exchangeManager = exchangeManager;
-            _tradesSubscriptionService = tradesSubscriptionService;
+            _TradesSubscriptionManager = TradesSubscriptionManager;
             _tradeQueue = new ConcurrentQueue<(string, BinanceTrade)>();
             _cancellationTokenSource = new CancellationTokenSource();
             _monitorTradesTask = MonitorTradesAsync(_cancellationTokenSource.Token);
@@ -68,7 +68,7 @@ namespace Application.Managers
 
                 loopThread = new Thread(async () =>
                 {
-                    await _tradesSubscriptionService.SubscribeToTradesAsync(tradePairs, (tradePair, trade) =>
+                    await _TradesSubscriptionManager.SubscribeToTradesAsync(tradePairs, (tradePair, trade) =>
                     {
                         var color = trade.IsBuyer ? ConsoleColor.Green : ConsoleColor.Red;
 
@@ -99,7 +99,6 @@ namespace Application.Managers
                 await _monitorTradesTask;
             }
         }
-
 
         private async Task MonitorTradesAsync(CancellationToken cancellationToken)
         {

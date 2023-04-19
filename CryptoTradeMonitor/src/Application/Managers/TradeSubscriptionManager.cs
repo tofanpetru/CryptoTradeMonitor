@@ -6,13 +6,13 @@ using System.Collections.Concurrent;
 
 namespace Application.Managers
 {
-    public class TradesSubscriptionService : ITradesSubscriptionManager, IDisposable
+    public class TradesSubscriptionManager : ITradesSubscriptionManager, IDisposable
     {
         private readonly IBinanceSocketApiRequestExecutor _socketApiExecutor;
         private readonly ConcurrentDictionary<string, List<BinanceTrade>> _tradeDataStore;
         private readonly Timer _clearOldTradesTimer;
 
-        public TradesSubscriptionService(IBinanceSocketApiRequestExecutor socketApiExecutor)
+        public TradesSubscriptionManager(IBinanceSocketApiRequestExecutor socketApiExecutor)
         {
             _socketApiExecutor = socketApiExecutor;
             _tradeDataStore = new ConcurrentDictionary<string, List<BinanceTrade>>();
