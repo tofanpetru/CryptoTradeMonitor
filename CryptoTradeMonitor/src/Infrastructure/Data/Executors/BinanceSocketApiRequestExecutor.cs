@@ -105,6 +105,12 @@ namespace Infrastructure.Data.Executors
             {
                 try
                 {
+                    if (_clientWebSocket.State != WebSocketState.Open)
+                    {
+                        Console.WriteLine($"WebSocket state is {_clientWebSocket.State}, cannot receive message.");
+                        return;
+                    }
+
                     var response = await ReceiveAsync();
 
                     if (!string.IsNullOrEmpty(response))
