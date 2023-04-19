@@ -11,23 +11,21 @@ namespace Application.Managers
     {
         private readonly IExchangeManager _exchangeManager;
         private readonly ITradesSubscriptionManager _TradesSubscriptionManager;
-        private readonly ConcurrentQueue<(string TradePair, BinanceTrade Trade)> _tradeQueue;
-        private readonly CancellationTokenSource _cancellationTokenSource;
-        private readonly Task _monitorTradesTask;
         private static readonly TradeConfiguration _tradeConfiguration = AppSettings<TradeConfiguration>.Instance;
+
+        private readonly OutputManager _outputManager;
 
         public ConsoleOutputManager(IExchangeManager exchangeManager, ITradesSubscriptionManager TradesSubscriptionManager)
         {
             _exchangeManager = exchangeManager;
             _TradesSubscriptionManager = TradesSubscriptionManager;
-            _tradeQueue = new ConcurrentQueue<(string, BinanceTrade)>();
-            _cancellationTokenSource = new CancellationTokenSource();
-            _monitorTradesTask = MonitorTradesAsync(_cancellationTokenSource.Token);
-        }
 
+            _outputManager = new OutputManager();
+            _outputManager.Start();
+        }
         private async Task<List<string>> ChooseTradePairsAsync()
         {
-            var availableTradePairs = await _exchangeManager.GetMarketTradePairsAsync(permissions: new List<PermissionType> { PermissionType.SPOT });
+            var availableTradePairs = await _exchangeManager.GetMarketTradePairsAsync(permissions: new List<PermissionType> { _tradeConfiguration.PermissionType });
             var tradePairs = MenuUtils.DisplayMenu(availableTradePairs);
 
             if (tradePairs.Count == 0)
@@ -62,9 +60,13 @@ namespace Application.Managers
                 cancellationTokenSource?.Cancel();
             };
 
+            Console.WriteLine("Loading...");
+            Console.WriteLine("Tofan Petru, 069772462");
+
             try
             {
                 var tradePairs = await GetTradePairsFromUserAsync();
+                Console.ResetColor();
 
                 Console.WriteLine("Selected: " + string.Join(", ", tradePairs));
 
@@ -73,10 +75,7 @@ namespace Application.Managers
                     await _TradesSubscriptionManager.SubscribeToTradesAsync(tradePairs, (tradePair, trade) =>
                     {
                         var color = trade.IsBuyer ? ConsoleColor.Green : ConsoleColor.Red;
-
-                        Console.ForegroundColor = color;
-                        Console.WriteLine($"{tradePair} - {trade.TradeTime}: {trade.Price} {trade.Quantity}");
-                        Console.ResetColor();
+                        _outputManager.OutputTrade(tradePair, trade, color);
                     }, _tradeConfiguration.EventType, cancellationTokenSource.Token);
                 });
 
@@ -98,26 +97,37 @@ namespace Application.Managers
             {
                 cancellationTokenSource?.Cancel();
                 loopThread?.Join();
-                await _monitorTradesTask;
             }
         }
 
-        private async Task MonitorTradesAsync(CancellationToken cancellationToken)
+        private class OutputManager
         {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                if (_tradeQueue.TryDequeue(out var tradeInfo))
-                {
-                    var (tradePair, trade) = tradeInfo;
-                    var color = trade.IsBuyer ? ConsoleColor.Green : ConsoleColor.Red;
+            private readonly BlockingCollection<(string TradePair, BinanceTrade Trade, ConsoleColor Color)> _outputQueue;
+            private readonly Thread _outputThread;
 
-                    Console.ForegroundColor = color;
-                    Console.WriteLine($"{tradePair} - {trade.TradeTime}: {trade.Price} {trade.Quantity}");
-                    Console.ResetColor();
-                }
-                else
+            public OutputManager()
+            {
+                _outputQueue = new BlockingCollection<(string, BinanceTrade, ConsoleColor)>();
+                _outputThread = new Thread(ProcessOutputQueue) { IsBackground = true };
+            }
+
+            public void Start()
+            {
+                _outputThread.Start();
+            }
+
+            public void OutputTrade(string tradePair, BinanceTrade trade, ConsoleColor color)
+            {
+                _outputQueue.Add((tradePair, trade, color));
+            }
+
+            private void ProcessOutputQueue()
+            {
+                foreach (var output in _outputQueue.GetConsumingEnumerable())
                 {
-                    await Task.Delay(100, cancellationToken);
+                    Console.ForegroundColor = output.Color;
+                    Console.WriteLine($"{output.TradePair} - {output.Trade.TradeTime}: {output.Trade.Price} {output.Trade.Quantity}");
+                    Console.ResetColor();
                 }
             }
         }
