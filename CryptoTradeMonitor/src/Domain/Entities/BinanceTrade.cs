@@ -1,5 +1,4 @@
-﻿using Domain.Enums;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace Domain.Entities
 {

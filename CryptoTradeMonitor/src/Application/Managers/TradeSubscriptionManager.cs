@@ -11,35 +11,29 @@ namespace Application.Managers
         private readonly IBinanceSocketApiRequestExecutor _socketApiExecutor;
         private readonly ConcurrentDictionary<string, List<BinanceTrade>> _tradeDataStore;
         private readonly Timer _clearOldTradesTimer;
-        private readonly List<Task> _subscriptionTasks;
 
         public TradesSubscriptionService(IBinanceSocketApiRequestExecutor socketApiExecutor)
         {
             _socketApiExecutor = socketApiExecutor;
             _tradeDataStore = new ConcurrentDictionary<string, List<BinanceTrade>>();
-            _subscriptionTasks = new List<Task>();
             _clearOldTradesTimer = new Timer(ClearOldTrades, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
-        public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback, CancellationToken cancellationToken, string eventType = "trade")
+        public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback, string eventType, CancellationToken cancellationToken)
         {
             var tasks = new List<Task>();
 
             foreach (var tradePair in tradePairs)
             {
-                var subscriptionTask = SubscribeToTradeAsync(tradePair, tradeCallback, cancellationToken, eventType);
+                var subscriptionTask = SubscribeToTradeAsync(tradePair, tradeCallback, eventType, cancellationToken);
                 tasks.Add(subscriptionTask);
             }
 
             await Task.WhenAll(tasks);
         }
 
-        private async Task SubscribeToTradeAsync(string tradePair,
-                                                 Action<string, BinanceTrade> tradeCallback,
-                                                 CancellationToken cancellationToken,
-                                                 string eventType)
+        private async Task SubscribeToTradeAsync(string tradePair, Action<string, BinanceTrade> tradeCallback, string eventType, CancellationToken cancellationToken)
         {
-
             var success = await _socketApiExecutor.SubscribeAsync(tradePair, eventType, response =>
             {
                 try
@@ -71,7 +65,8 @@ namespace Application.Managers
                 Console.WriteLine($"Failed to subscribe to {tradePair}@{eventType}.");
             }
 
-            await _socketApiExecutor.StartReceiveLoop(cancellationToken);
+            // Run StartReceiveLoop on a separate thread
+            _ = Task.Run(() => _socketApiExecutor.StartReceiveLoop(cancellationToken), cancellationToken);
         }
 
         private void ClearOldTrades(object state)
@@ -91,6 +86,7 @@ namespace Application.Managers
         {
             _clearOldTradesTimer?.Dispose();
             _socketApiExecutor?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -8,4 +8,4 @@ var serviceProvider = new ServiceCollection()
 
 var app = serviceProvider.GetService<IConsoleOutputManager>();
 
-await app.Run();
+await app.RunAsync();

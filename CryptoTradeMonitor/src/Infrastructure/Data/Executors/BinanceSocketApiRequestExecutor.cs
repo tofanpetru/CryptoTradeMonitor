@@ -1,7 +1,6 @@
 ﻿using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -27,7 +26,6 @@ namespace Infrastructure.Data.Executors
         {
             _cancellationTokenSource = new CancellationTokenSource();
             _clientWebSocket = new ClientWebSocket();
-            Console.WriteLine(_uri);
             await _clientWebSocket.ConnectAsync(_uri, _cancellationTokenSource.Token);
         }
 
@@ -50,6 +48,7 @@ namespace Infrastructure.Data.Executors
         {
             _cancellationTokenSource.Cancel();
             _clientWebSocket.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public async Task<string> ReceiveAsync(string subscriptionId, TimeSpan timeout)
@@ -94,15 +93,13 @@ namespace Infrastructure.Data.Executors
             _eventCallbacks[eventType] = callback;
 
             await ConnectAsync();
-            await SendAsync("{\"method\":\"SUBSCRIBE\",\"params\":[\"" + symbol.ToLowerInvariant() + "@" + eventType.ToLowerInvariant() + "\"],\"id\":1}");
+            await SendAsync($"{{\"method\":\"SUBSCRIBE\",\"params\":[\"{symbol.ToLowerInvariant()}@{eventType.ToLowerInvariant()}\"],\"id\":1}}");
 
             return true;
         }
 
         public async Task StartReceiveLoop(CancellationToken cancellationToken)
         {
-            Console.WriteLine("start");
-
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
@@ -148,8 +145,6 @@ namespace Infrastructure.Data.Executors
                     Console.WriteLine($"Error in receive loop: {ex}");
                 }
             }
-            Console.WriteLine("stop");
-
         }
     }
 }

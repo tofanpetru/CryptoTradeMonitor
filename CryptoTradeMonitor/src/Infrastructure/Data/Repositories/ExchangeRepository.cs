@@ -108,7 +108,7 @@ namespace Infrastructure.Data.Repositories
         #endregion
 
         #region Private methods
-        private BinanceTrade MapTrade(TradePair tradePair, BinanceTrade trade)
+        private static BinanceTrade MapTrade(TradePair tradePair, BinanceTrade trade)
         {
             var mappedTrade = new BinanceTrade
             {
