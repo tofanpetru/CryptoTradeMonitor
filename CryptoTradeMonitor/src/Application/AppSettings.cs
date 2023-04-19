@@ -1,22 +1,20 @@
-﻿using Domain.Configurations;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 
 namespace Application
 {
-    public static class AppSettings
+    public static class AppSettings<T> where T : class, new()
     {
-        private static readonly IConfiguration _configuration;
-
-        public static AppConfiguration Configuration { get; private set; }
-
-        static AppSettings()
+        private static readonly Lazy<T> _instance = new(() =>
         {
-            _configuration = new ConfigurationBuilder()
+            var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appSettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
-            Configuration = _configuration.GetSection("AppConfiguration").Get<AppConfiguration>();
-        }
-    }
+            var config = new T();
+            configuration.GetSection(typeof(T).Name).Bind(config);
+            return config;
+        });
 
+        public static T Instance => _instance.Value;
+    }
 }

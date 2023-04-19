@@ -1,6 +1,6 @@
 ﻿namespace Domain.Configurations
 {
-    public class AppConfiguration
+    public class TradeConfiguration
     {
         public string EventType { get; set; }
         public int MaxTradeCount { get; set; }

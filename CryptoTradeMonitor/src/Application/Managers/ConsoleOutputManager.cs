@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Utils;
+using Domain.Configurations;
 using Domain.Entities;
 using Domain.Enums;
 using System.Collections.Concurrent;
@@ -13,6 +14,7 @@ namespace Application.Managers
         private readonly ConcurrentQueue<(string TradePair, BinanceTrade Trade)> _tradeQueue;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly Task _monitorTradesTask;
+        private static readonly TradeConfiguration _tradeConfiguration = AppSettings<TradeConfiguration>.Instance;
 
         public ConsoleOutputManager(IExchangeManager exchangeManager, ITradesSubscriptionManager TradesSubscriptionManager)
         {
@@ -75,7 +77,7 @@ namespace Application.Managers
                         Console.ForegroundColor = color;
                         Console.WriteLine($"{tradePair} - {trade.TradeTime}: {trade.Price} {trade.Quantity}");
                         Console.ResetColor();
-                    }, AppSettings.Configuration.EventType, cancellationTokenSource.Token);
+                    }, _tradeConfiguration.EventType, cancellationTokenSource.Token);
                 });
 
                 loopThread.Start();

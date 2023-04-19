@@ -1,10 +1,15 @@
-﻿namespace Application.Utils
+﻿using Domain.Configurations;
+
+namespace Application.Utils
 {
     public static class MenuUtils
     {
-
-        public static List<T> DisplayMenu<T>(List<T> items, int itemsPerPage = 9)
+        private static readonly UIConfiguration _uiConfiguration = AppSettings<UIConfiguration>.Instance;
+        public static List<T> DisplayMenu<T>(List<T> items)
         {
+            var itemsPerPage = _uiConfiguration.PageSize;
+            var consoleMessages = _uiConfiguration.ConsoleMessages;
+
             int currentPage = 0;
             int totalPages = (int)Math.Ceiling(items.Count / (double)itemsPerPage);
             List<int> selectedItemIndexes = new();
@@ -46,9 +51,10 @@
                     }
 
                     Console.WriteLine();
-                    Console.WriteLine("Use arrow keys to navigate, Space to select/deselect, and Enter to finish.");
-                    Console.WriteLine("Up/Down arrows move through items. Left/Right arrows change pages.");
-                    Console.WriteLine("Reaching the first/last item on a page will automatically move to the previous/next page.");
+                    for (int i = 0; i < consoleMessages.Count; i++)
+                    {
+                        Console.WriteLine(consoleMessages[i]);
+                    }
                 }
 
                 shouldClearConsole = true;

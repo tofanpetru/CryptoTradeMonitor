@@ -1,4 +1,5 @@
 ﻿using Application.Interfaces;
+using Domain.Configurations;
 using Domain.Entities;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
@@ -8,6 +9,7 @@ namespace Application.Managers
 {
     public class TradesSubscriptionManager : ITradesSubscriptionManager, IDisposable
     {
+        private static readonly TradeConfiguration _tradeConfiguration = AppSettings<TradeConfiguration>.Instance;
         private readonly IBinanceSocketApiRequestExecutor _socketApiExecutor;
         private readonly ConcurrentDictionary<string, List<BinanceTrade>> _tradeDataStore;
         private readonly Timer _clearOldTradesTimer;
@@ -19,7 +21,7 @@ namespace Application.Managers
             _clearOldTradesTimer = new Timer(ClearOldTrades,
                                              null,
                                              TimeSpan.Zero,
-                                             TimeSpan.FromSeconds(AppSettings.Configuration.ClearOldTradesIntervalSeconds));
+                                             TimeSpan.FromSeconds(_tradeConfiguration.ClearOldTradesIntervalSeconds));
         }
 
         public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback, string eventType, CancellationToken cancellationToken)
@@ -78,9 +80,9 @@ namespace Application.Managers
             {
                 var tradeList = _tradeDataStore[tradePair];
 
-                if (tradeList.Count > AppSettings.Configuration.MaxTradeCount)
+                if (tradeList.Count > _tradeConfiguration.MaxTradeCount)
                 {
-                    tradeList.RemoveRange(0, tradeList.Count - AppSettings.Configuration.MaxTradeCount);
+                    tradeList.RemoveRange(0, tradeList.Count - _tradeConfiguration.MaxTradeCount);
                 }
             }
         }
