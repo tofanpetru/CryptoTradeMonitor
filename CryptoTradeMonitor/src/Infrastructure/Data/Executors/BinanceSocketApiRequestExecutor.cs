@@ -1,4 +1,6 @@
-﻿using Infrastructure.Data.Interfaces;
+﻿using Domain.Entities;
+using Infrastructure.Data.Interfaces;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
@@ -92,6 +94,8 @@ namespace Infrastructure.Data.Executors
             _uri = new Uri(BinanceWebSocketUri + symbol.ToLowerInvariant() + "@" + eventType.ToLowerInvariant());
             _eventCallbacks[eventType] = callback;
 
+            Console.WriteLine($"Registered callback for {symbol}@{eventType}");
+
             await ConnectAsync();
             await SendAsync($"{{\"method\":\"SUBSCRIBE\",\"params\":[\"{symbol.ToLowerInvariant()}@{eventType.ToLowerInvariant()}\"],\"id\":1}}");
 
@@ -109,8 +113,16 @@ namespace Infrastructure.Data.Executors
                         Console.WriteLine($"WebSocket state is {_clientWebSocket.State}, cannot receive message.");
                         return;
                     }
-
                     var response = await ReceiveAsync();
+
+
+                    Console.WriteLine();
+                    var output = JsonConvert.DeserializeObject<BinanceTrade>(response);
+                    var color = output.IsBuyerMaker ? ConsoleColor.Green : ConsoleColor.Red;
+                    Console.ForegroundColor = color;
+                    Console.WriteLine($"{output.TradePair} - {output.TradeTime}: {output.Price} {output.Quantity}");
+
+                    Console.ResetColor();
 
                     if (!string.IsNullOrEmpty(response))
                     {

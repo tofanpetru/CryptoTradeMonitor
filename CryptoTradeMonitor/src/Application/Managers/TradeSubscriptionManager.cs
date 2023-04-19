@@ -17,27 +17,27 @@ namespace Application.Managers
         public TradesSubscriptionManager(IBinanceSocketApiRequestExecutor socketApiExecutor)
         {
             _socketApiExecutor = socketApiExecutor;
-            _tradeDataStore = new ConcurrentDictionary<string, List<BinanceTrade>>();
             _clearOldTradesTimer = new Timer(ClearOldTrades,
                                              null,
                                              TimeSpan.Zero,
                                              TimeSpan.FromSeconds(_tradeConfiguration.ClearOldTradesIntervalSeconds));
+            _tradeDataStore = new ConcurrentDictionary<string, List<BinanceTrade>>();
         }
 
-        public async Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback, string eventType, CancellationToken cancellationToken)
+        public async Task SubscribeToTradesAsync(List<string> tradePairs, string eventType, CancellationToken cancellationToken)
         {
             var tasks = new List<Task>();
 
             foreach (var tradePair in tradePairs)
             {
-                var subscriptionTask = SubscribeToTradeAsync(tradePair, tradeCallback, eventType, cancellationToken);
+                var subscriptionTask = SubscribeToTradeAsync(tradePair, eventType, cancellationToken);
                 tasks.Add(subscriptionTask);
             }
 
             await Task.WhenAll(tasks);
         }
 
-        private async Task SubscribeToTradeAsync(string tradePair, Action<string, BinanceTrade> tradeCallback, string eventType, CancellationToken cancellationToken)
+        private async Task SubscribeToTradeAsync(string tradePair, string eventType, CancellationToken cancellationToken)
         {
             var success = await _socketApiExecutor.SubscribeAsync(tradePair, eventType, response =>
             {
@@ -51,13 +51,19 @@ namespace Application.Managers
                         return;
                     }
 
-                    _tradeDataStore.AddOrUpdate(tradePair, new List<BinanceTrade>() { trade }, (key, oldValue) =>
+                    if (!_tradeDataStore.TryGetValue(tradePair, out var tradeList))
                     {
-                        oldValue.Add(trade);
-                        return oldValue;
-                    });
+                        tradeList = new List<BinanceTrade>();
+                        _tradeDataStore.TryAdd(tradePair, tradeList);
+                    }
 
-                    tradeCallback(tradePair, trade);
+                    tradeList.Add(trade);
+
+                    if (tradeList.Count > _tradeConfiguration.MaxTradeCount)
+                    {
+                        tradeList.RemoveRange(0, tradeList.Count - _tradeConfiguration.MaxTradeCount);
+                    }
+
                 }
                 catch (Exception ex)
                 {

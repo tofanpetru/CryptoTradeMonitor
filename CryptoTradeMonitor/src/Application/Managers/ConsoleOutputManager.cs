@@ -1,9 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Utils;
 using Domain.Configurations;
-using Domain.Entities;
 using Domain.Enums;
-using System.Collections.Concurrent;
 
 namespace Application.Managers
 {
@@ -13,15 +11,10 @@ namespace Application.Managers
         private readonly ITradesSubscriptionManager _TradesSubscriptionManager;
         private static readonly TradeConfiguration _tradeConfiguration = AppSettings<TradeConfiguration>.Instance;
 
-        private readonly OutputManager _outputManager;
-
         public ConsoleOutputManager(IExchangeManager exchangeManager, ITradesSubscriptionManager TradesSubscriptionManager)
         {
             _exchangeManager = exchangeManager;
             _TradesSubscriptionManager = TradesSubscriptionManager;
-
-            _outputManager = new OutputManager();
-            _outputManager.Start();
         }
         private async Task<List<string>> ChooseTradePairsAsync()
         {
@@ -70,14 +63,14 @@ namespace Application.Managers
 
                 Console.WriteLine("Selected: " + string.Join(", ", tradePairs));
 
-                loopThread = new Thread(async () =>
+                loopThread = new Thread(() =>
                 {
-                    await _TradesSubscriptionManager.SubscribeToTradesAsync(tradePairs, (tradePair, trade) =>
+                    Task.Run(async () =>
                     {
-                        var color = trade.IsBuyer ? ConsoleColor.Green : ConsoleColor.Red;
-                        _outputManager.OutputTrade(tradePair, trade, color);
-                    }, _tradeConfiguration.EventType, cancellationTokenSource.Token);
+                        await _TradesSubscriptionManager.SubscribeToTradesAsync(tradePairs, _tradeConfiguration.EventType, cancellationTokenSource.Token);
+                    }).Wait();
                 });
+
 
                 loopThread.Start();
 
@@ -97,38 +90,6 @@ namespace Application.Managers
             {
                 cancellationTokenSource?.Cancel();
                 loopThread?.Join();
-            }
-        }
-
-        private class OutputManager
-        {
-            private readonly BlockingCollection<(string TradePair, BinanceTrade Trade, ConsoleColor Color)> _outputQueue;
-            private readonly Thread _outputThread;
-
-            public OutputManager()
-            {
-                _outputQueue = new BlockingCollection<(string, BinanceTrade, ConsoleColor)>();
-                _outputThread = new Thread(ProcessOutputQueue) { IsBackground = true };
-            }
-
-            public void Start()
-            {
-                _outputThread.Start();
-            }
-
-            public void OutputTrade(string tradePair, BinanceTrade trade, ConsoleColor color)
-            {
-                _outputQueue.Add((tradePair, trade, color));
-            }
-
-            private void ProcessOutputQueue()
-            {
-                foreach (var output in _outputQueue.GetConsumingEnumerable())
-                {
-                    Console.ForegroundColor = output.Color;
-                    Console.WriteLine($"{output.TradePair} - {output.Trade.TradeTime}: {output.Trade.Price} {output.Trade.Quantity}");
-                    Console.ResetColor();
-                }
             }
         }
     }

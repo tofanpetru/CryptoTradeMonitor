@@ -1,9 +1,7 @@
-﻿using Domain.Entities;
-
-namespace Application.Interfaces
+﻿namespace Application.Interfaces
 {
     public interface ITradesSubscriptionManager : IDisposable
     {
-        Task SubscribeToTradesAsync(List<string> tradePairs, Action<string, BinanceTrade> tradeCallback, string eventType, CancellationToken cancellationToken);
+        Task SubscribeToTradesAsync(List<string> tradePairs, string eventType, CancellationToken cancellationToken);
     }
 }
