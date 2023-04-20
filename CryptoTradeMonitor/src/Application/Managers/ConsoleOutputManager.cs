@@ -1,5 +1,5 @@
 ﻿using Application.Interfaces;
-using Application.Utils;
+using Common.Helpers;
 using Domain.Configurations;
 using Domain.Enums;
 using Infrastructure.Data;
@@ -20,7 +20,7 @@ namespace Application.Managers
         private async Task<List<string>> ChooseTradePairsAsync()
         {
             var availableTradePairs = await _exchangeManager.GetMarketTradePairsAsync(permissions: new List<PermissionType> { _tradeConfiguration.PermissionType });
-            var tradePairs = MenuUtils.DisplayMenu(availableTradePairs);
+            var tradePairs = MenuHelper.DisplayMenu(availableTradePairs);
 
             if (tradePairs.Count == 0)
             {

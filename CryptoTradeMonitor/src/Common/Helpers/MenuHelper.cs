@@ -1,9 +1,9 @@
 ﻿using Domain.Configurations;
 using Infrastructure.Data;
 
-namespace Application.Utils
+namespace Common.Helpers
 {
-    public static class MenuUtils
+    public static class MenuHelper
     {
         private static readonly UIConfiguration _uiConfiguration = AppSettings<UIConfiguration>.Instance;
         public static List<T> DisplayMenu<T>(List<T> items)
