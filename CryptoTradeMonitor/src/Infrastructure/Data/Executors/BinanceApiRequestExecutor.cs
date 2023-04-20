@@ -1,4 +1,5 @@
-﻿using Domain.Configurations;
+﻿using Common.Configuration;
+using Domain.Configurations;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;

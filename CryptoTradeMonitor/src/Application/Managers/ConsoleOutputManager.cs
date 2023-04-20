@@ -1,4 +1,5 @@
 ﻿using Application.Interfaces;
+using Common.Configuration;
 using Common.Helpers;
 using Domain.Configurations;
 using Domain.Enums;

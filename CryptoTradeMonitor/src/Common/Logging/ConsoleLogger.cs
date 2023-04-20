@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace Infrastructure.Data
+namespace Common.Logging
 {
     public class ConsoleLogger
     {

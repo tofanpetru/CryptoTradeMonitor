@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 
-namespace Infrastructure.Data
+namespace Common.Configuration
 {
     public static class AppSettings<T> where T : class, new()
     {

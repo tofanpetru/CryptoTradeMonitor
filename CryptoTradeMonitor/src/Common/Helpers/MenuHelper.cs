@@ -1,5 +1,5 @@
-﻿using Domain.Configurations;
-using Infrastructure.Data;
+﻿using Common.Configuration;
+using Domain.Configurations;
 
 namespace Common.Helpers
 {

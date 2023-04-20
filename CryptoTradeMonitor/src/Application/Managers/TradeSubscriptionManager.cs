@@ -1,4 +1,5 @@
 ﻿using Application.Interfaces;
+using Common.Configuration;
 using Domain.Configurations;
 using Domain.Entities;
 using Infrastructure.Data;
