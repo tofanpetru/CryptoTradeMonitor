@@ -1,11 +1,18 @@
-﻿using Application.Interfaces;
-using CryptoTradeMonitor.IoC;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Application.Builders;
+using Application.Interfaces;
+using Application.Managers;
+using Infrastructure.Data.Executors;
+using Infrastructure.Data.Interfaces;
+using Infrastructure.Data.Repositories;
 
-var serviceProvider = new ServiceCollection()
-                .AddDependencyServiceExtension()
-                .BuildServiceProvider();
+IBinanceApiRequestExecutor apiRequestExecutor = new BinanceApiRequestExecutor();
+IExchangeRepository exchangeRepository = new ExchangeRepository(apiRequestExecutor);
 
-var app = serviceProvider.GetService<IConsoleOutputManager>();
+IMarketTradePairsBuilder marketTradePairsBuilder = new MarketTradePairsBuilder(exchangeRepository);
+IExchangeManager exchangeManager = new ExchangeManager(exchangeRepository, marketTradePairsBuilder);
 
-await app.RunAsync();
+IBinanceSocketApiRequestExecutor binanceSocketApiRequestExecutor = new BinanceSocketApiRequestExecutor();
+ITradesSubscriptionManager tradesSubscriptionManager = new TradesSubscriptionManager(binanceSocketApiRequestExecutor);
+
+IConsoleOutputManager consoleOutputManager = new ConsoleOutputManager(exchangeManager, tradesSubscriptionManager);
+await consoleOutputManager.RunAsync();

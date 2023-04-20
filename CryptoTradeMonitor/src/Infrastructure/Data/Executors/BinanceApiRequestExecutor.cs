@@ -12,10 +12,8 @@ namespace Infrastructure.Data.Executors
         private readonly List<HttpClient> _httpClients;
         private int _currentIndex = 0;
 
-        public BinanceApiRequestExecutor(IHttpClientFactory httpClientFactory)
+        public BinanceApiRequestExecutor()
         {
-            _httpClientFactory = httpClientFactory;
-
             var httpClientsConfig = AppSettings<BinanceConfiguration>.Instance.HttpClients;
             _httpClients = new List<HttpClient>();
 
