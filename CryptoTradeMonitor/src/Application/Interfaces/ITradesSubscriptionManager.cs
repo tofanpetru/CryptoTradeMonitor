@@ -2,6 +2,6 @@
 {
     public interface ITradesSubscriptionManager : IDisposable
     {
-        Task SubscribeToTradesAsync(List<string> tradePairs, string eventType, CancellationToken cancellationToken);
+        void SubscribeToTrades(List<string> tradePairs, string eventType, CancellationToken cancellationToken);
     }
 }

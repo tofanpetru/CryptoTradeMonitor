@@ -2,6 +2,6 @@
 {
     public interface IConsoleOutputManager
     {
-        Task RunAsync();
+        void Run();
     }
 }

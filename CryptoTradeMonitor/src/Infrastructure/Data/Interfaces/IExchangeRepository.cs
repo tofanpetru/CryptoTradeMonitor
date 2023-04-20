@@ -5,7 +5,7 @@ namespace Infrastructure.Data.Interfaces
 {
     public interface IExchangeRepository
     {
-        Task<List<string>> GetMarketTradePairsAsync(List<string> symbols = null, List<PermissionType> permissions = null);
-        Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount);
+        List<string> GetMarketTradePairs(List<string> symbols = null, List<PermissionType> permissions = null);
+        List<BinanceTrade> GetTrades(List<TradePair> tradePairs, int tradeHistoryCount);
     }
 }

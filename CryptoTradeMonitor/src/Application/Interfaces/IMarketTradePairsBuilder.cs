@@ -4,6 +4,6 @@ namespace Application.Interfaces
 {
     public interface IMarketTradePairsBuilder
     {
-        Task<List<string>> BuildAsync(Action<MarketTradePairsOptions> optionsAction = null);
+        List<string> Build(Action<MarketTradePairsOptions> optionsAction = null);
     }
 }

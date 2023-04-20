@@ -4,10 +4,10 @@ namespace Infrastructure.Data.Interfaces
 {
     public interface IBinanceApiRequestExecutor
     {
-        Task<HttpResponseMessage> ExecuteApiRequestAsync(Func<HttpClient, Task<HttpResponseMessage>> func);
-        Task<T> ExecuteApiRequestAsync<T>(Func<HttpClient, Task<HttpResponseMessage>> func);
-        Task<T> GetContentAsync<T>(HttpResponseMessage response);
-        Task<T> GetContentAsync<T>(HttpResponseMessage response, params JsonConverter[] converters);
-        Task<string> ExecuteApiRequestAsyncAsString(Func<HttpClient, Task<HttpResponseMessage>> func);
+        HttpResponseMessage ExecuteApiRequest(Func<HttpClient, Task<HttpResponseMessage>> func);
+        T ExecuteApiRequest<T>(Func<HttpClient, Task<HttpResponseMessage>> func);
+        T GetContent<T>(HttpResponseMessage response);
+        T GetContent<T>(HttpResponseMessage response, params JsonConverter[] converters);
+        string ExecuteApiRequestAsyncAsString(Func<HttpClient, Task<HttpResponseMessage>> func);
     }
 }

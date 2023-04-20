@@ -2,11 +2,11 @@
 {
     public interface IBinanceSocketApiRequestExecutor : IDisposable
     {
-        Task ConnectAsync();
-        Task SendAsync(string message);
-        Task<string> ReceiveAsync();
-        Task StartReceiveLoop(CancellationToken cancellationToken);
-        Task<string> ReceiveAsync(string subscriptionId, TimeSpan timeout);
-        Task<bool> SubscribeAsync(string symbol, string eventType, Action<string> callback);
+        void Connect();
+        void Send(string message);
+        string Receive();
+        void StartReceiveLoop(CancellationToken cancellationToken);
+        string Receive(string subscriptionId, TimeSpan timeout);
+        bool Subscribe(string symbol, string eventType, Action<string> callback);
     }
 }
