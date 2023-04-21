@@ -17,5 +17,20 @@
 
             return result;
         }
+
+        public static void RunSync(Func<Task> func)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                Task.Run(func).GetAwaiter().GetResult();
+            }
+            else
+            {
+                var taskScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+                var t = new Task(async () => { await func(); });
+                t.RunSynchronously(taskScheduler);
+                t.Wait();
+            }
+        }
     }
 }
