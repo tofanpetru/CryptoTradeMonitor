@@ -15,4 +15,4 @@ IBinanceSocketApiRequestExecutor binanceSocketApiRequestExecutor = new BinanceSo
 ITradesSubscriptionManager tradesSubscriptionManager = new TradesSubscriptionManager(binanceSocketApiRequestExecutor);
 
 IConsoleOutputManager consoleOutputManager = new ConsoleOutputManager(exchangeManager, tradesSubscriptionManager);
-await consoleOutputManager.RunAsync();
+consoleOutputManager.Run();

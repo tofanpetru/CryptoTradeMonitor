@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Common.Helpers;
+using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data.Converters;
 using Infrastructure.Data.Interfaces;
@@ -19,7 +20,7 @@ namespace Infrastructure.Data.Repositories
         }
 
         #region Public methods
-        public async Task<List<string>> GetMarketTradePairsAsync(List<string> symbols = null, List<PermissionType> permissions = null)
+        public List<string> GetMarketTradePairs(List<string> symbols = null, List<PermissionType> permissions = null)
         {
             var queryString = new StringBuilder();
 
@@ -47,11 +48,12 @@ namespace Infrastructure.Data.Repositories
                 return cachedResult;
             }
 
-            var response = await _requestExecutor.ExecuteApiRequestAsync(async client =>
+            var response = _requestExecutor.ExecuteApiRequest(client =>
             {
                 var query = cacheKey.TrimEnd('&');
                 var uri = new Uri($"/api/v3/exchangeInfo?{query}", UriKind.Relative);
-                return await client.GetAsync(uri);
+
+                return AsyncHelper.RunSync(() => client.GetAsync(uri));
             });
 
             if (!response.IsSuccessStatusCode)
@@ -59,7 +61,7 @@ namespace Infrastructure.Data.Repositories
                 throw new Exception($"Failed to retrieve trade pairs: {response.ReasonPhrase}");
             }
 
-            var exchangeInfo = await _requestExecutor.GetContentAsync<BinanceExchangeInfo>(response, new PermissionTypeConverter());
+            var exchangeInfo = _requestExecutor.GetContent<BinanceExchangeInfo>(response, new PermissionTypeConverter());
 
             var tradePairs = exchangeInfo.Symbols
                 .Where(s => symbols == null || symbols.Contains(s.Symbol))
@@ -70,25 +72,26 @@ namespace Infrastructure.Data.Repositories
             _cachedPairs.TryAdd(cacheKey, tradePairs);
 
             // Remove the cached result after 1 hour
-            _ = Task.Run(async () =>
+            _ = Task.Run( () =>
             {
-                await Task.Delay(TimeSpan.FromHours(1));
+                Task.Delay(TimeSpan.FromHours(1));
                 _cachedPairs.TryRemove(cacheKey, out _);
             });
 
             return tradePairs;
         }
 
-        public async Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
+        public List<BinanceTrade> GetTrades(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
         {
             int limit = tradeHistoryCount > 1000 ? 1000 : tradeHistoryCount;
 
-            var tasks = tradePairs.Select(async tradePair =>
+            var tasks = tradePairs.Select(tradePair =>
             {
-                var response = await _requestExecutor.ExecuteApiRequestAsync(async client =>
+                var response = _requestExecutor.ExecuteApiRequest(client =>
                 {
                     var uri = new Uri($"/api/v3/trades?symbol={tradePair.BaseAsset}{tradePair.QuoteAsset}&limit={limit}", UriKind.Relative);
-                    return await client.GetAsync(uri);
+
+                    return AsyncHelper.RunSync(() => client.GetAsync(uri));
                 });
 
                 if (!response.IsSuccessStatusCode)
@@ -96,12 +99,12 @@ namespace Infrastructure.Data.Repositories
                     throw new Exception($"Failed to retrieve trades for {tradePair}: {response.ReasonPhrase}");
                 }
 
-                var result = await _requestExecutor.GetContentAsync<List<BinanceTrade>>(response);
+                var result = _requestExecutor.GetContent<List<BinanceTrade>>(response);
 
                 return result.Select(trade => MapTrade(tradePair, trade));
             }).ToList();
 
-            var trades = (await Task.WhenAll(tasks)).SelectMany(x => x).ToList();
+            var trades = tasks.SelectMany(x => x).ToList();
 
             return trades;
         }

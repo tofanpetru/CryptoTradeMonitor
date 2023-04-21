@@ -15,7 +15,7 @@ namespace Infrastructure.Data.Repositories
             _maxTradesPerPair = maxTradesPerPair;
         }
 
-        public async Task AddTradeAsync(string tradePair, BinanceTrade trade)
+        public void AddTrade(string tradePair, BinanceTrade trade)
         {
             var trades = _tradesByPair.GetOrAdd(tradePair, _ => new ConcurrentQueue<BinanceTrade>());
             trades.Enqueue(trade);
@@ -24,8 +24,6 @@ namespace Infrastructure.Data.Repositories
             {
                 trades.TryDequeue(out _);
             }
-
-            await Task.CompletedTask;
         }
 
         public IEnumerable<BinanceTrade> GetTrades(string tradePair)

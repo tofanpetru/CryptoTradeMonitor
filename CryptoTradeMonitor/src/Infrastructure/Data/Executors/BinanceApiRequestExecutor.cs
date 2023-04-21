@@ -1,8 +1,10 @@
 ﻿using Common.Configuration;
+using Common.Helpers;
 using Domain.Configurations;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Infrastructure.Data.Executors
 {
@@ -24,7 +26,7 @@ namespace Infrastructure.Data.Executors
                 _httpClients.Add(httpClient);
             }
         }
-
+        #region Async methods
         public async Task<HttpResponseMessage> ExecuteApiRequestAsync(Func<HttpClient, Task<HttpResponseMessage>> func)
         {
             HttpResponseMessage response = null;
@@ -55,7 +57,6 @@ namespace Infrastructure.Data.Executors
             throw new Exception($"Failed to execute API request after {retries} retries: {response?.ReasonPhrase}");
         }
 
-
         public async Task<T> ExecuteApiRequestAsync<T>(Func<HttpClient, Task<HttpResponseMessage>> func)
         {
             var response = await ExecuteApiRequestAsync(func);
@@ -79,7 +80,7 @@ namespace Infrastructure.Data.Executors
 
         public async Task<string> ExecuteApiRequestAsyncAsString(Func<HttpClient, Task<HttpResponseMessage>> func)
         {
-            var cacheKey = GetCacheKey(func);
+            var cacheKey = await GetCacheKey(func);
 
             if (_cachedResponses.TryGetValue(cacheKey, out var cachedResponse))
             {
@@ -101,13 +102,13 @@ namespace Infrastructure.Data.Executors
             return content;
         }
 
-        private string GetCacheKey(Func<HttpClient, Task<HttpResponseMessage>> func)
+        private async Task<string> GetCacheKey(Func<HttpClient, Task<HttpResponseMessage>> func)
         {
             var httpRequest = new HttpRequestMessage();
             var httpClient = _httpClientFactory.CreateClient();
 
-            var response = func(httpClient).GetAwaiter().GetResult();
-            var content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var response = await func(httpClient);
+            var content = await response.Content.ReadAsStringAsync();
 
             httpRequest.Method = response.RequestMessage.Method;
             httpRequest.RequestUri = response.RequestMessage.RequestUri;
@@ -115,5 +116,33 @@ namespace Infrastructure.Data.Executors
 
             return $"{httpRequest.Method}:{httpRequest.RequestUri}";
         }
+
+        #endregion
+
+        #region Sync methods
+        public HttpResponseMessage ExecuteApiRequest(Func<HttpClient, HttpResponseMessage> func)
+        {
+            return AsyncHelper.RunSync(() => ExecuteApiRequestAsync(client => Task.FromResult(func(client))));
+        }
+        public T ExecuteApiRequest<T>(Func<HttpClient, HttpResponseMessage> func)
+        {
+            return AsyncHelper.RunSync(() => ExecuteApiRequestAsync<T>(client => Task.FromResult(func(client))));
+        }
+
+        public T GetContent<T>(HttpResponseMessage response, params JsonConverter[] converters)
+        {
+            return AsyncHelper.RunSync(() => GetContentAsync<T>(response, converters));
+        }
+
+        public T GetContent<T>(HttpResponseMessage response)
+        {
+            return AsyncHelper.RunSync(() => GetContentAsync<T>(response));
+        }
+
+        public string ExecuteApiRequestAsString(Func<HttpClient, HttpResponseMessage> func)
+        {
+            return AsyncHelper.RunSync(() => ExecuteApiRequestAsyncAsString(client => Task.FromResult(func(client))));
+        }
+        #endregion
     }
 }

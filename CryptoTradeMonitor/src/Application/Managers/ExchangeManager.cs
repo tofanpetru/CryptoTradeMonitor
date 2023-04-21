@@ -16,18 +16,18 @@ namespace Application.Managers
             _marketTradePairsBuilder = marketTradePairsBuilder;
         }
 
-        public async Task<List<string>> GetMarketTradePairsAsync(List<string> symbols = null, List<PermissionType> permissions = null)
+        public List<string> GetMarketTradePairs(List<string> symbols = null, List<PermissionType> permissions = null)
         {
-            return await _marketTradePairsBuilder.BuildAsync(options =>
+            return _marketTradePairsBuilder.Build(options =>
             {
                 options.Symbols = symbols;
                 options.Permissions = permissions;
             });
         }
 
-        public async Task<List<BinanceTrade>> GetTradesAsync(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
+        public List<BinanceTrade> GetTrades(List<TradePair> tradePairs, int tradeHistoryCount = 1000)
         {
-            var trades = await _exchangeRepository.GetTradesAsync(tradePairs, tradeHistoryCount);
+            var trades = _exchangeRepository.GetTrades(tradePairs, tradeHistoryCount);
 
             return trades;
         }

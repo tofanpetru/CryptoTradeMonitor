@@ -13,12 +13,12 @@ namespace Application.Builders
             _exchangeRepository = exchangeRepository;
         }
 
-        public async Task<List<string>> BuildAsync(Action<MarketTradePairsOptions> optionsAction = null)
+        public List<string> Build(Action<MarketTradePairsOptions> optionsAction = null)
         {
             var options = new MarketTradePairsOptions();
             optionsAction?.Invoke(options);
 
-            return await _exchangeRepository.GetMarketTradePairsAsync(options.Symbols, options.Permissions);
+            return _exchangeRepository.GetMarketTradePairs(options.Symbols, options.Permissions);
         }
     }
 }

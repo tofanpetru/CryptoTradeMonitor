@@ -4,7 +4,10 @@ using Domain.Configurations;
 using Domain.Entities;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace Application.Managers
 {
@@ -25,22 +28,17 @@ namespace Application.Managers
             _tradeDataStore = new ConcurrentDictionary<string, List<BinanceTrade>>();
         }
 
-        public async Task SubscribeToTradesAsync(List<string> tradePairs, string eventType, CancellationToken cancellationToken)
+        public void SubscribeToTrades(List<string> tradePairs, string eventType, CancellationToken cancellationToken)
         {
-            var tasks = new List<Task>();
-
             foreach (var tradePair in tradePairs)
             {
-                var subscriptionTask = SubscribeToTradeAsync(tradePair, eventType, cancellationToken);
-                tasks.Add(subscriptionTask);
+                SubscribeToTrade(tradePair, eventType, cancellationToken);
             }
-
-            await Task.WhenAll(tasks);
         }
 
-        private async Task SubscribeToTradeAsync(string tradePair, string eventType, CancellationToken cancellationToken)
+        private void SubscribeToTrade(string tradePair, string eventType, CancellationToken cancellationToken)
         {
-            var success = await _socketApiExecutor.SubscribeAsync(tradePair, eventType, response =>
+            var success = _socketApiExecutor.Subscribe(tradePair, eventType, response =>
             {
                 try
                 {

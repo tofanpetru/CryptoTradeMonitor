@@ -1,4 +1,5 @@
 ﻿using Common.Configuration;
+using Common.Helpers;
 using Common.Logging;
 using Domain.Configurations;
 using Domain.Entities;
@@ -25,6 +26,7 @@ namespace Infrastructure.Data.Executors
             _eventCallbacks = new ConcurrentDictionary<string, Action<string>>();
         }
 
+        #region Async Methods
         public async Task ConnectAsync()
         {
             _cancellationTokenSource = new CancellationTokenSource();
@@ -45,13 +47,6 @@ namespace Infrastructure.Data.Executors
             var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
 
             return message;
-        }
-
-        public void Dispose()
-        {
-            _cancellationTokenSource.Cancel();
-            _clientWebSocket.Dispose();
-            GC.SuppressFinalize(this);
         }
 
         public async Task<string> ReceiveAsync(string subscriptionId, TimeSpan timeout)
@@ -89,22 +84,54 @@ namespace Infrastructure.Data.Executors
                 }
             }
         }
+        #endregion
 
-        public async Task<bool> SubscribeAsync(string symbol, string eventType, Action<string> callback)
+        #region Sync Methods
+        public void Connect()
+        {
+            AsyncHelper.RunSync(ConnectAsync);
+        }
+
+        public void Send(string message)
+        {
+            AsyncHelper.RunSync(() => SendAsync(message));
+        }
+
+        public string Receive()
+        {
+            return AsyncHelper.RunSync(ReceiveAsync);
+        }
+
+        public string Receive(string subscriptionId, TimeSpan timeout)
+        {
+            return AsyncHelper.RunSync(() => ReceiveAsync(subscriptionId, timeout));
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource.Cancel();
+            _clientWebSocket.Dispose();
+            GC.SuppressFinalize(this);
+        }
+
+        public bool Subscribe(string symbol, string eventType, Action<string> callback)
         {
             _uri = new Uri(AppSettings<BinanceConfiguration>.Instance.WebSocketUri + symbol.ToLowerInvariant() + "@" + eventType.ToLowerInvariant());
             _eventCallbacks[eventType] = callback;
 
             Console.WriteLine($"Registered callback for {symbol}@{eventType}");
 
-            await ConnectAsync();
-            await SendAsync($"{{\"method\":\"SUBSCRIBE\",\"params\":[\"{symbol.ToLowerInvariant()}@{eventType.ToLowerInvariant()}\"],\"id\":1}}");
+            Connect();
+            Send($"{{\"method\":\"SUBSCRIBE\",\"params\":[\"{symbol.ToLowerInvariant()}@{eventType.ToLowerInvariant()}\"],\"id\":1}}");
 
             return true;
         }
 
-        public async Task StartReceiveLoop(CancellationToken cancellationToken)
+        public void StartReceiveLoop(CancellationToken cancellationToken)
         {
+            const int maxRetryCount = 3;
+            int retryCount = 0;
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
@@ -112,9 +139,18 @@ namespace Infrastructure.Data.Executors
                     if (_clientWebSocket.State != WebSocketState.Open)
                     {
                         Console.WriteLine($"WebSocket state is {_clientWebSocket.State}, cannot receive message.");
-                        return;
+                        if (retryCount >= maxRetryCount)
+                        {
+                            Console.WriteLine($"WebSocket connection failed after {maxRetryCount} attempts. Exiting receive loop.");
+                            return;
+                        }
+                        Console.WriteLine($"WebSocket connection failed. Retrying in 5 seconds...");
+                        Thread.Sleep(TimeSpan.FromSeconds(5));
+                        Connect();
+                        retryCount++;
+                        continue;
                     }
-                    var response = await ReceiveAsync();
+                    var response = Receive();
                     var logger = new ConsoleLogger();
 
                     PrintResponse(response, logger);
@@ -129,7 +165,7 @@ namespace Infrastructure.Data.Executors
                             var pongPayload = new JObject { ["pong"] = payload["ping"] };
                             var pongMessage = pongPayload.ToString();
 
-                            await SendAsync(pongMessage);
+                            Send(pongMessage);
                         }
                         else
                         {
@@ -147,6 +183,20 @@ namespace Infrastructure.Data.Executors
                         }
                     }
                 }
+                catch (WebSocketException ex)
+                {
+                    Console.WriteLine($"WebSocket exception in receive loop: {ex}");
+                    if (retryCount >= maxRetryCount)
+                    {
+                        Console.WriteLine($"WebSocket connection failed after {maxRetryCount} attempts. Exiting receive loop.");
+                        return;
+                    }
+                    Console.WriteLine($"WebSocket connection failed. Retrying in 5 seconds...");
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
+                    Connect();
+                    retryCount++;
+                    continue;
+                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error in receive loop: {ex}");
@@ -163,5 +213,6 @@ namespace Infrastructure.Data.Executors
                 logger.Log($"{output.TradePair} - {output.TradeTime}: {output.Price} {output.Quantity}", color);
             }
         }
+        #endregion
     }
 }

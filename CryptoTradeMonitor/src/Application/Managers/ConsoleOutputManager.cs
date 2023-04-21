@@ -17,9 +17,10 @@ namespace Application.Managers
             _exchangeManager = exchangeManager;
             _TradesSubscriptionManager = TradesSubscriptionManager;
         }
-        private async Task<List<string>> ChooseTradePairsAsync()
+
+        private List<string> ChooseTradePairs()
         {
-            var availableTradePairs = await _exchangeManager.GetMarketTradePairsAsync(permissions: new List<PermissionType> { _tradeConfiguration.PermissionType });
+            var availableTradePairs = _exchangeManager.GetMarketTradePairs(permissions: new List<PermissionType> { _tradeConfiguration.PermissionType });
             var tradePairs = MenuHelper.DisplayMenu(availableTradePairs);
 
             if (tradePairs.Count == 0)
@@ -30,19 +31,19 @@ namespace Application.Managers
             return tradePairs;
         }
 
-        private async Task<List<string>> GetTradePairsFromUserAsync()
+        private List<string> GetTradePairsFromUser()
         {
             List<string> selectedTradePairs;
 
             do
             {
-                selectedTradePairs = await ChooseTradePairsAsync();
+                selectedTradePairs = ChooseTradePairs();
             } while (selectedTradePairs.Count == 0);
 
             return selectedTradePairs;
         }
 
-        public async Task RunAsync()
+        public void Run()
         {
             CancellationTokenSource cancellationTokenSource = new();
             Thread loopThread = null;
@@ -59,16 +60,16 @@ namespace Application.Managers
 
             try
             {
-                var tradePairs = await GetTradePairsFromUserAsync();
+                var tradePairs = GetTradePairsFromUser();
                 Console.ResetColor();
 
                 Console.WriteLine("Selected: " + string.Join(", ", tradePairs));
 
                 loopThread = new Thread(() =>
                 {
-                    Task.Run(async () =>
+                    Task.Run(() =>
                     {
-                        await _TradesSubscriptionManager.SubscribeToTradesAsync(tradePairs, _tradeConfiguration.EventType, cancellationTokenSource.Token);
+                        _TradesSubscriptionManager.SubscribeToTrades(tradePairs, _tradeConfiguration.EventType, cancellationTokenSource.Token);
                     }).Wait();
                 });
 
@@ -77,7 +78,7 @@ namespace Application.Managers
 
                 try
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(5), cancellationTokenSource.Token);
+                    Task.Delay(TimeSpan.FromMinutes(5), cancellationTokenSource.Token);
                 }
                 catch (TaskCanceledException)
                 {
