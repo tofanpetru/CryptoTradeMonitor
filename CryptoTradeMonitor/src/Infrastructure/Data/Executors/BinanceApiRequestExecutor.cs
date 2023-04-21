@@ -4,7 +4,6 @@ using Domain.Configurations;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace Infrastructure.Data.Executors
 {

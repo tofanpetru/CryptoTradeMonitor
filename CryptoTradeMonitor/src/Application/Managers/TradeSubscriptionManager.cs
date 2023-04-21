@@ -4,10 +4,7 @@ using Domain.Configurations;
 using Domain.Entities;
 using Infrastructure.Data.Interfaces;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Threading;
 
 namespace Application.Managers
 {

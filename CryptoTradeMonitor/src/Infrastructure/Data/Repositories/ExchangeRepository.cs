@@ -72,7 +72,7 @@ namespace Infrastructure.Data.Repositories
             _cachedPairs.TryAdd(cacheKey, tradePairs);
 
             // Remove the cached result after 1 hour
-            _ = Task.Run( () =>
+            _ = Task.Run(() =>
             {
                 Task.Delay(TimeSpan.FromHours(1));
                 _cachedPairs.TryRemove(cacheKey, out _);
