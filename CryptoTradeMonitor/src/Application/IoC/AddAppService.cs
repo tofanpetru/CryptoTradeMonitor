@@ -12,7 +12,8 @@ namespace Application.IoC
             types.Where(type => type.IsInterface).ToList()
                 .ForEach(interfac => types.Where(type => type.GetInterfaces().Contains(interfac)).ToList()
                 .ForEach(implementation => appService.AddScoped(interfac, implementation)));
-
+            
+            //appService.AddScoped<IConsoleOutputManager, ConsoleOutputManager>();
             return appService;
         }
     }
